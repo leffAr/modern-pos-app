@@ -1,0 +1,47 @@
+                        final Map<String, Map<String, dynamic>> cashierData = {};
+                        for (var r in results) {
+                          final tx = r.readTable(appDb.transactions);
+                          final payment = r.readTableOrNull(appDb.payments);
+                          final isKasbon = payment?.method == "KASBON";
+                          final name = tx.userId;
+                          
+                          if (!cashierData.containsKey(name)) {
+                            cashierData[name] = {"count": 0, "revenue": 0.0, "piutang": 0.0};
+                          }
+                          cashierData[name]!["count"] = cashierData[name]!["count"] + 1;
+                          if (isKasbon) {
+                            cashierData[name]!["piutang"] = cashierData[name]!["piutang"] + tx.grandTotal;
+                          } else {
+                            cashierData[name]!["revenue"] = cashierData[name]!["revenue"] + tx.grandTotal;
+                          }
+                        }
+
+                        final List<List<String>> data = [];
+                        double finalRevenue = 0;
+                        double finalPiutang = 0;
+                        int finalCount = 0;
+
+                        cashierData.forEach((name, stats) {
+                          final count = stats["count"] as int;
+                          final revenue = stats["revenue"] as double;
+                          final piutang = stats["piutang"] as double;
+                          finalCount += count;
+                          finalRevenue += revenue;
+                          finalPiutang += piutang;
+
+                          data.add([
+                            name,
+                            count.toString(),
+                            revenue.toInt().toString(),
+                            piutang.toInt().toString(),
+                          ]);
+                        });
+
+                        data.add(["", "", "", ""]);
+                        data.add(["TOTAL", finalCount.toString(), finalRevenue.toInt().toString(), finalPiutang.toInt().toString()]);
+
+                        final path = await ExportService.exportToExcel(
+                          title: "Performa_Kasir",
+                          data: data,
+                          headers: ["Nama Kasir", "Total Transaksi", "Total Pendapatan (Rp)", "Total Piutang (Rp)"],
+                        );

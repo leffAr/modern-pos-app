@@ -1,0 +1,20 @@
+class _CheckoutDialog extends StatefulWidget {
+  final double total;
+  final bool enableTableNumber;
+  final bool hasCustomer;
+  final double customerPoints;
+  final Function(double paid, double change, String method, String? tableNum, DateTime? dueDate, bool usePoints) onComplete;
+
+  const _CheckoutDialog({required this.total, required this.enableTableNumber, required this.hasCustomer, required this.customerPoints, required this.onComplete});
+
+  @override
+  State<_CheckoutDialog> createState() => _CheckoutDialogState();
+}
+
+class _CheckoutDialogState extends State<_CheckoutDialog> {
+  double _paidAmount = 0;
+  String _paymentMethod = "CASH"; // "CASH" atau "QRIS" atau "KASBON"
+  DateTime? _dueDate;
+  final TextEditingController _amountCtrl = TextEditingController();
+  final TextEditingController _tableCtrl = TextEditingController();
+  bool _usePoints = false;

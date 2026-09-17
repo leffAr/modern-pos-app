@@ -1,0 +1,42 @@
+          return StreamBuilder<List<Expense>>(
+            stream: appDb.select(appDb.expenses).watch(),
+            builder: (context, expSnapshot) {
+              return StreamBuilder<List<DebtPayment>>(
+                stream: appDb.select(appDb.debtPayments).watch(),
+                builder: (context, dpSnapshot) {
+                  final allExpenses = expSnapshot.data ?? [];
+                  final todayExpenses = allExpenses.where((e) => 
+                    e.date.year == now.year && e.date.month == now.month && e.date.day == now.day
+                  ).toList();
+
+                  final allDebtPayments = dpSnapshot.data ?? [];
+                  final todayDebtPayments = allDebtPayments.where((dp) => 
+                    dp.date.year == now.year && dp.date.month == now.month && dp.date.day == now.day
+                  ).toList();
+
+                  double totalDebtPaymentsToday = 0;
+                  for (var dp in todayDebtPayments) {
+                    totalDebtPaymentsToday += dp.amount;
+                  }
+
+                  double totalDebtPaymentsAllTime = 0;
+                  for (var dp in allDebtPayments) {
+                    totalDebtPaymentsAllTime += dp.amount;
+                  }
+
+                  double finalTotalPiutangToday = totalPiutangToday - totalDebtPaymentsToday;
+                  if (finalTotalPiutangToday < 0) finalTotalPiutangToday = 0;
+
+                  double finalAllTimePiutang = allTimePiutang - totalDebtPaymentsAllTime;
+                  if (finalAllTimePiutang < 0) finalAllTimePiutang = 0;
+
+                  // Pembayaran piutang harus masuk ke Pendapatan Hari Ini dan Total Pendapatan
+                  double finalTotalRevenueToday = totalRevenueToday + totalDebtPaymentsToday;
+                  double finalAllTimeRevenue = allTimeRevenue + totalDebtPaymentsAllTime;
+                  
+                  double totalExpenseToday = 0;
+                  for (var e in todayExpenses) {
+                    totalExpenseToday += e.amount;
+                  }
+
+                  double netProfitToday = finalTotalRevenueToday - totalExpenseToday;

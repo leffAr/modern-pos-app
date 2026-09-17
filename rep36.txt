@@ -1,0 +1,34 @@
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _scannerFocusNode = FocusNode();
+  String _barcodeBuffer = "";
+  DateTime? _lastKeyPressTime;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mengambil data secara live dari SQLite
+    _productsStream = appDb.select(appDb.products).watch();
+    _activeShiftStream = (appDb.select(appDb.shifts)..where((s) => s.userId.equals(widget.cashierName) & s.status.equals("OPEN"))).watch();
+    _categoriesStream = appDb.select(appDb.categories).watch();
+    _promosStream = appDb.select(appDb.promos).watch();
+    _customersStream = appDb.select(appDb.customers).watch();
+    _inventoryStream = appDb.select(appDb.inventory).watch();
+    
+    (appDb.select(appDb.businesses)..limit(1)).watchSingleOrNull().listen((biz) {
+      if (biz != null && mounted) {
+        setState(() {
+          _taxPercentage = biz.taxPercentage;
+        });
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_scannerFocusNode);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scannerFocusNode.dispose();
+    super.dispose();
+  }

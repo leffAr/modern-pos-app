@@ -1,0 +1,26 @@
+
+@DataClassName("StockOpname")
+class StockOpnames extends Table {
+  TextColumn get id => text()(); // UUID
+  TextColumn get branchId => text().references(Branches, #id)();
+  TextColumn get userId => text().references(Users, #id)();
+  TextColumn get status => text().withDefault(const Constant("COMPLETED"))();
+  DateTimeColumn get date => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DataClassName("StockOpnameItem")
+class StockOpnameItems extends Table {
+  TextColumn get id => text()(); // UUID
+  TextColumn get opnameId => text().references(StockOpnames, #id)();
+  TextColumn get productId => text().references(Products, #id)();
+  IntColumn get systemStock => integer()();
+  IntColumn get actualStock => integer()();
+  IntColumn get variance => integer()();
+  TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

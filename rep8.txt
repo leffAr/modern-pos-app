@@ -1,0 +1,52 @@
+          final allTxResults = snapshot.data ?? [];
+          
+          final now = DateTime.now();
+          final todayResults = allTxResults.where((r) {
+            final tx = r.readTable(appDb.transactions);
+            return tx.createdAt.year == now.year && tx.createdAt.month == now.month && tx.createdAt.day == now.day;
+          }).toList();
+
+          double totalRevenueToday = 0;
+          double totalPiutangToday = 0;
+          double allTimeRevenue = 0;
+          double allTimePiutang = 0;
+
+          // Group per Kasir (Hari Ini)
+          final Map<String, Map<String, dynamic>> cashierPerformance = {};
+
+          for (var r in allTxResults) {
+            final tx = r.readTable(appDb.transactions);
+            final payment = r.readTableOrNull(appDb.payments);
+            final isKasbon = payment?.method == "KASBON";
+            
+            if (isKasbon) {
+              allTimePiutang += tx.grandTotal;
+            } else {
+              allTimeRevenue += tx.grandTotal;
+            }
+            
+            // If today
+            if (tx.createdAt.year == now.year && tx.createdAt.month == now.month && tx.createdAt.day == now.day) {
+              if (isKasbon) {
+                totalPiutangToday += tx.grandTotal;
+              } else {
+                totalRevenueToday += tx.grandTotal;
+              }
+              
+              final name = tx.userId;
+              if (!cashierPerformance.containsKey(name)) {
+                cashierPerformance[name] = {"count": 0, "revenue": 0.0, "piutang": 0.0};
+              }
+              cashierPerformance[name]!["count"] = cashierPerformance[name]!["count"] + 1;
+              if (isKasbon) {
+                cashierPerformance[name]!["piutang"] = cashierPerformance[name]!["piutang"] + tx.grandTotal;
+              } else {
+                cashierPerformance[name]!["revenue"] = cashierPerformance[name]!["revenue"] + tx.grandTotal;
+              }
+            }
+          }
+
+          final averageToday = todayResults.isEmpty ? 0.0 : totalRevenueToday / todayResults.length;
+
+          // Mengurutkan dari yang terbaru ke terlama untuk Recent TX
+          final recentTxs = allTxResults.map((r) => r.readTable(appDb.transactions)).toList();

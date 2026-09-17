@@ -1,0 +1,29 @@
+            // Transaction List
+            ...results.map((r) {
+              final tx = r.readTable(appDb.transactions);
+              final payment = r.readTableOrNull(appDb.payments);
+              final isKasbon = payment?.method == "KASBON";
+              
+              final date = DateFormat("dd MMM yyyy, HH:mm").format(tx.createdAt);
+              return Card(
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: tx.status == "COMPLETED" ? (isKasbon ? Colors.orange.shade100 : Colors.green.shade100) : Colors.red.shade100,
+                    child: Icon(
+                      tx.status == "COMPLETED" ? Icons.check : Icons.close,
+                      color: tx.status == "COMPLETED" ? (isKasbon ? Colors.orange : Colors.green) : Colors.red,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(tx.receiptNumber, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: Text(date, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text("Rp ${formatter.format(tx.grandTotal.toInt())}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: tx.status == "COMPLETED" ? (isKasbon ? Colors.orange : Colors.green) : Colors.red)),
+                      Text(isKasbon ? "KASBON" : tx.status, style: TextStyle(fontSize: 11, color: tx.status == "COMPLETED" ? (isKasbon ? Colors.orange : Colors.green) : Colors.red, fontWeight: isKasbon ? FontWeight.bold : FontWeight.normal)),
+                    ],
+                  ),
+                  onTap: () {
+                    if (tx.status != "COMPLETED") return;

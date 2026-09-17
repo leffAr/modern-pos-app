@@ -1,0 +1,8 @@
+              onPressed: () {
+                 showDialog(
+                   context: context, 
+                   builder: (ctx) => _ProductSelectionDialog(
+                     onSelected: (p) => _addProductToOpname(p),
+                   ),
+                 );
+              },

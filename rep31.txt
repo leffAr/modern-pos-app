@@ -1,0 +1,29 @@
+                    const SizedBox(height: 14),
+                    // Harga Grosir
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: wholesalePriceCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: "Harga Grosir (Opsional)",
+                              prefixText: "Rp ",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: wholesaleMinQtyCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: "Min. Beli Grosir",
+                              suffixText: "pcs",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),

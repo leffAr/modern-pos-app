@@ -1,0 +1,31 @@
+    for (var tx in txs) {
+      final pay = await (appDb.select(appDb.payments)..where((p) => p.transactionId.equals(tx.id))).getSingleOrNull();
+      final method = pay?.method ?? "CASH";
+      
+      if (method == "CASH") { cash += tx.grandTotal; total += tx.grandTotal; }
+      else if (method == "QRIS") { qris += tx.grandTotal; total += tx.grandTotal; }
+      else if (method == "KASBON") { piutang += tx.grandTotal; }
+
+      txList.add({
+        "receipt": tx.receiptNumber,
+        "date": tx.createdAt,
+        "cashier": tx.userId,
+        "method": method,
+        "total": tx.grandTotal,
+      });
+    }
+
+    final dps = await (appDb.select(appDb.debtPayments)
+      ..where((d) => d.date.isBiggerOrEqualValue(activeShift.openedAt))
+    ).get();
+    
+    double shiftDebtPayments = 0;
+    for (var dp in dps) {
+      shiftDebtPayments += dp.amount;
+    }
+    
+    piutang -= shiftDebtPayments;
+    if (piutang < 0) piutang = 0;
+    
+    total += shiftDebtPayments;
+    cash += shiftDebtPayments;

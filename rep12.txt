@@ -1,0 +1,65 @@
+
+  @override
+  Widget build(BuildContext context) {
+    final query = appDb.select(appDb.transactions).join([
+      drift.leftOuterJoin(appDb.payments, appDb.payments.transactionId.equalsExp(appDb.transactions.id))
+    ]);
+    if (dateRange != null) {
+      query.where(appDb.transactions.createdAt.isBiggerOrEqualValue(dateRange!.start) & appDb.transactions.createdAt.isSmallerOrEqualValue(dateRange!.end.add(const Duration(days: 1))));
+    }
+
+    return StreamBuilder<List<drift.TypedResult>>(
+      stream: query.watch(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final results = snapshot.data ?? [];
+
+        if (results.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                Text("Belum Ada Penjualan", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                const SizedBox(height: 8),
+                Text(
+                  "Transaksi yang Anda buat di menu Kasir\nakan muncul di sini sebagai laporan.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade400),
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  icon: const Icon(Icons.point_of_sale),
+                  label: const Text("Buka Menu Kasir"),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Silakan buka menu Kasir (POS) di sidebar untuk membuat transaksi pertama Anda!")),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+
+        final completedResults = results.where((r) => r.readTable(appDb.transactions).status == "COMPLETED").toList();
+        
+        double totalRevenue = 0;
+        double totalPiutang = 0;
+        for (var r in completedResults) {
+          final tx = r.readTable(appDb.transactions);
+          final payment = r.readTableOrNull(appDb.payments);
+          if (payment?.method == "KASBON") {
+             totalPiutang += tx.grandTotal;
+          } else {
+             totalRevenue += tx.grandTotal;
+          }
+        }
+        
+        final totalTransactions = completedResults.length;
+        final avgOrder = totalTransactions > 0 ? (totalRevenue+totalPiutang) / totalTransactions : 0.0;
+        final formatter = NumberFormat("#,###", "id_ID");

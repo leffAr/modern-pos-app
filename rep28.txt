@@ -1,0 +1,36 @@
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Ringkasan Laba Rugi", style: Theme.of(context).textTheme.titleLarge),
+                    FilledButton.tonalIcon(
+                      icon: const Icon(Icons.file_download),
+                      label: const Text("Export Excel"),
+                      onPressed: () async {
+                        final List<List<String>> data = [
+                          ["Total Penjualan (Net)", totalRevenue.toInt().toString()],
+                          ["Harga Pokok Penjualan (HPP)", "-${totalCOGS.toInt()}"],
+                          ["Laba Kotor (Gross Profit)", grossProfit.toInt().toString()],
+                          ["Total Pengeluaran Operasional", "-${totalExpenses.toInt()}"],
+                          ["", ""],
+                          ["LABA BERSIH (NET PROFIT)", netProfit.toInt().toString()],
+                        ];
+
+                        final path = await ExportService.exportToExcel(
+                          title: "Laporan_Laba_Rugi",
+                          data: data,
+                          headers: ["Komponen Keuangan", "Nilai (Rp)"],
+                        );
+
+                        if (path != null && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Berhasil diexport! File tersimpan/terunduh.")));
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Revenue Card
+                Card(

@@ -1,0 +1,97 @@
+  void _showCheckoutDialog() async {
+    if (_cartItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Keranjang kosong!")));
+      return;
+    }
+
+    final business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull() ?? 
+         const Business(id: "BIZ-1", name: "MODERN POS", address: "", phone: "", logoBase64: null, taxPercentage: 0.0, enableTableNumber: false, enableQueueNumber: false);
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => _CheckoutDialog(
+          total: _grandTotal, 
+          enableTableNumber: business.enableTableNumber,
+          hasCustomer: _selectedCustomer != null,
+          customerPoints: _selectedCustomer?.points ?? 0,
+          onComplete: (paid, change, method, tableNum, dueDate, usePoints) => _completeTransaction(paid, change, method, tableNum, dueDate, usePoints, business),
+        ),
+      );
+    }
+  }
+
+  void _completeTransaction(double paid, double change, String paymentMethod, String? tableNum, DateTime? dueDate, bool usePoints, Business business) async {
+    Navigator.of(context).pop(); // close dialog
+    
+    final txId = "INV-${DateTime.now().millisecondsSinceEpoch}";
+
+    try {
+      // Hitung Queue Number (Reset tiap hari)
+      int? queueNum;
+      if (business.enableQueueNumber) {
+        final now = DateTime.now();
+        final startOfDay = DateTime(now.year, now.month, now.day);
+        final endOfDay = startOfDay.add(const Duration(days: 1));
+        
+        final todayTxs = await (appDb.select(appDb.transactions)
+          ..where((t) => t.createdAt.isBetweenValues(startOfDay, endOfDay) & t.queueNumber.isNotNull())
+        ).get();
+        
+        queueNum = todayTxs.length + 1;
+      }
+
+      double pointsUsedAmount = 0;
+      double pointsEarnedAmount = 0;
+      double finalGrandTotal = _grandTotal;
+
+      if (_selectedCustomer != null) {
+        if (usePoints) {
+          pointsUsedAmount = _selectedCustomer!.points;
+          if (pointsUsedAmount > finalGrandTotal) {
+            pointsUsedAmount = finalGrandTotal;
+          }
+          finalGrandTotal -= pointsUsedAmount;
+        }
+        
+        // Earn points: 1 point for every Rp 100 spent
+        pointsEarnedAmount = (finalGrandTotal / 100).floorToDouble();
+      }
+
+      // Simpan Transaksi Utama ke Database SQLite
+      await appDb.into(appDb.transactions).insert(
+        TransactionsCompanion.insert(
+          id: txId,
+          branchId: "CABANG-1",
+          userId: widget.cashierName, // Gunakan nama kasir yang sedang login
+          customerId: drift.Value(_selectedCustomer?.id),
+          receiptNumber: txId,
+          status: const drift.Value("COMPLETED"),
+          subtotal: drift.Value(_subtotal),
+          tax: drift.Value(_tax),
+          discount: drift.Value(_discountAmount),
+          grandTotal: drift.Value(finalGrandTotal),
+          tableNumber: drift.Value(tableNum),
+          queueNumber: drift.Value(queueNum),
+          dueDate: drift.Value(dueDate),
+          pointsUsed: drift.Value(pointsUsedAmount),
+          pointsEarned: drift.Value(pointsEarnedAmount),
+        )
+      );
+
+      if (_selectedCustomer != null) {
+        // Jika Kasbon, tambah utang pelanggan
+        double updatedDebt = _selectedCustomer!.debt;
+        if (paymentMethod == "KASBON") {
+          updatedDebt += finalGrandTotal;
+        }
+        
+        double updatedPoints = _selectedCustomer!.points - pointsUsedAmount + pointsEarnedAmount;
+
+        await (appDb.update(appDb.customers)..where((c) => c.id.equals(_selectedCustomer!.id))).write(
+          CustomersCompanion(
+            debt: drift.Value(updatedDebt),
+            points: drift.Value(updatedPoints),
+          )
+        );
+      }

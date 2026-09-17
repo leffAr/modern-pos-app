@@ -1,0 +1,15 @@
+  @override
+  Widget build(BuildContext context) {
+    double totalAfterPoints = widget.total;
+    if (_usePoints && widget.customerPoints > 0) {
+       totalAfterPoints -= widget.customerPoints;
+       if (totalAfterPoints < 0) totalAfterPoints = 0;
+    }
+
+    if (_paymentMethod == "QRIS") {
+      _paidAmount = totalAfterPoints; // QRIS selalu pas
+    }
+    
+    final change = _paymentMethod == "KASBON" ? 0.0 : (_paidAmount - totalAfterPoints);
+    bool isEnough = _paymentMethod == "KASBON" ? (_dueDate != null) : (_paidAmount >= totalAfterPoints);
+    final formatter = NumberFormat("#,###", "id_ID");

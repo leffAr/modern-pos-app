@@ -1,0 +1,10 @@
+  late Stream<List<drift.TypedResult>> _dashboardDataStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // Join transactions with payments to check KASBON
+    _dashboardDataStream = (appDb.select(appDb.transactions).join([
+      drift.leftOuterJoin(appDb.payments, appDb.payments.transactionId.equalsExp(appDb.transactions.id))
+    ])..orderBy([drift.OrderingTerm(expression: appDb.transactions.createdAt, mode: drift.OrderingMode.desc)])).watch();
+  }

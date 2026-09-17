@@ -1,0 +1,33 @@
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Produk Terlaris", style: Theme.of(context).textTheme.titleLarge),
+                FilledButton.tonalIcon(
+                  icon: const Icon(Icons.file_download),
+                  label: const Text("Export Excel"),
+                  onPressed: () async {
+                    final List<List<String>> data = [];
+                    for (var stat in sortedStats) {
+                      data.add([
+                        stat["name"].toString(),
+                        stat["sku"]?.toString() ?? "-",
+                        stat["qty"].toString(),
+                        (stat["revenue"] as double).toInt().toString(),
+                      ]);
+                    }
+
+                    final path = await ExportService.exportToExcel(
+                      title: "Laporan_Produk_Terlaris",
+                      data: data,
+                      headers: ["Nama Produk", "SKU", "Jumlah Terjual (Qty)", "Total Omset (Rp)"],
+                    );
+
+                    if (path != null && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Berhasil diexport! File tersimpan/terunduh.")));
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),

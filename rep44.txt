@@ -1,0 +1,7 @@
+      _screens.add(const ProductsScreen());
+      _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: Text("Produk")));
+
+      _screens.add(const StockOpnameScreen());
+      _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.fact_check_outlined), selectedIcon: Icon(Icons.fact_check), label: Text("Stok Opname")));
+
+      _screens.add(const CategoriesScreen());

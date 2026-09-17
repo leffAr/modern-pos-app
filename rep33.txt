@@ -1,0 +1,32 @@
+                  final buyPrice = double.tryParse(purchasePriceCtrl.text.replaceAll(".", "")) ?? 0;
+                  final sellPrice = double.tryParse(sellingPriceCtrl.text.replaceAll(".", "")) ?? 0;
+                  final wPrice = double.tryParse(wholesalePriceCtrl.text.replaceAll(".", ""));
+                  final wMinQty = int.tryParse(wholesaleMinQtyCtrl.text);
+                  final initialStock = int.tryParse(stockCtrl.text) ?? 0;
+                  final minStock = int.tryParse(minStockCtrl.text) ?? 0;
+
+                  // 1. Simpan Data Produk Utama
+                  final biz = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
+                  final bizId = biz?.id ?? "BIZ-1";
+
+                  final productId = product?.id ?? ("PROD-" + DateTime.now().millisecondsSinceEpoch.toString());
+
+                  if (product == null) {
+                    await appDb.into(appDb.products).insert(
+                          ProductsCompanion.insert(
+                            id: productId,
+                            businessId: bizId,
+                            categoryId: drift.Value(selectedCategoryId),
+                            name: name,
+                            sku: drift.Value(skuCtrl.text.trim().isEmpty ? null : skuCtrl.text.trim()),
+                            barcode: drift.Value(barcodeCtrl.text.trim().isEmpty ? null : barcodeCtrl.text.trim()),
+                            description: drift.Value(descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim()),
+                            imageBase64: drift.Value(currentImageBase64),
+                            purchasePrice: drift.Value(buyPrice),
+                            sellingPrice: drift.Value(sellPrice),
+                            wholesalePrice: drift.Value(wPrice),
+                            wholesaleMinQty: drift.Value(wMinQty),
+                            unit: drift.Value(unitCtrl.text.trim().isEmpty ? "pcs" : unitCtrl.text.trim()),
+                            isActive: drift.Value(isActive),
+                          ),
+                        );

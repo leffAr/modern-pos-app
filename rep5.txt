@@ -1,0 +1,10 @@
+  late Stream<List<Transaction>> _transactionsStream;
+  late Stream<List<Payment>> _paymentsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // Membaca seluruh histori transaksi dari SQLite secara Real-time
+    _transactionsStream = (appDb.select(appDb.transactions)..orderBy([(t) => drift.OrderingTerm(expression: t.createdAt, mode: drift.OrderingMode.desc)])).watch();
+    _paymentsStream = appDb.select(appDb.payments).watch();
+  }

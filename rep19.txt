@@ -1,0 +1,11 @@
+import 'package:flutter/material.dart';
+import 'package:drift/drift.dart' as drift;
+import '../../../core/database/database.dart';
+
+class CustomersScreen extends StatefulWidget {
+  final String userRole;
+  const CustomersScreen({super.key, required this.userRole});
+
+  @override
+  State<CustomersScreen> createState() => _CustomersScreenState();
+}

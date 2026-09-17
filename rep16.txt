@@ -1,0 +1,32 @@
+    double total = 0;
+    double cash = 0;
+    double qris = 0;
+    double piutang = 0;
+    List<Map<String, dynamic>> txList = [];
+
+    for (var tx in txs) {
+      final pay = await (appDb.select(appDb.payments)..where((p) => p.transactionId.equals(tx.id))).getSingleOrNull();
+      final method = pay?.method ?? "CASH";
+      
+      if (method == "CASH") { cash += tx.grandTotal; total += tx.grandTotal; }
+      else if (method == "QRIS") { qris += tx.grandTotal; total += tx.grandTotal; }
+      else if (method == "KASBON") { piutang += tx.grandTotal; }
+
+      txList.add({
+        "receipt": tx.receiptNumber,
+        "date": tx.createdAt,
+        "cashier": tx.userId,
+        "method": method,
+        "total": tx.grandTotal,
+      });
+    }
+
+    return {
+      "total": total,
+      "cash": cash,
+      "qris": qris,
+      "piutang": piutang,
+      "transactions": txList,
+      "txs": txList,
+      "isShiftClosed": false,
+    };

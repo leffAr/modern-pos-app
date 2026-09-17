@@ -1,0 +1,29 @@
+                    // Total Tagihan
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Total Tagihan", style: TextStyle(color: Colors.blueGrey, fontSize: 14)),
+                          Text("Rp ${formatter.format(widget.total)}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.blue.shade900)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (widget.hasCustomer && widget.customerPoints > 0)
+                      SwitchListTile(
+                        title: const Text("Gunakan Poin"),
+                        subtitle: Text("Poin tersedia: ${widget.customerPoints.toInt()} (Rp ${formatter.format(widget.customerPoints.toInt())})"),
+                        value: _usePoints,
+                        onChanged: (val) {
+                          setState(() {
+                            _usePoints = val;
+                            // logic total diskon poin akan di-handle di onComplete
+                          });
+                        },
+                      ),
+                    const SizedBox(height: 8),
+
+                    if (widget.enableTableNumber) ...[

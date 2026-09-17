@@ -1,0 +1,38 @@
+        // Fetch Transactions
+        final txs = await (appDb.select(appDb.transactions)..where((t) => t.createdAt.isBetweenValues(start, end) & t.status.equals("COMPLETED"))).get();
+        
+        final payments = await (appDb.select(appDb.payments).join([
+           drift.innerJoin(appDb.transactions, appDb.transactions.id.equalsExp(appDb.payments.transactionId))
+        ])..where(
+          appDb.transactions.createdAt.isBetweenValues(start, end) & appDb.transactions.status.equals("COMPLETED")
+        )).get();
+
+        double grossSales = 0;
+        double discounts = 0;
+        double netSales = 0;
+        double totalCash = 0;
+        double totalQris = 0;
+        double totalKasbon = 0;
+
+        for (var t in txs) {
+          // Cari payment untuk transaksi ini
+          final pRow = payments.where((p) => p.readTable(appDb.payments).transactionId == t.id).firstOrNull;
+          if (pRow != null) {
+            final payment = pRow.readTable(appDb.payments);
+            final isKasbon = payment.method == "KASBON";
+            
+            if (isKasbon) {
+              totalKasbon += t.grandTotal; // Gunakan grandTotal dari transaksi, bukan payment.amount (karena amount = 0)
+            } else {
+              grossSales += t.subtotal;
+              discounts += t.discount;
+              netSales += t.grandTotal;
+              
+              if (payment.method == "CASH") {
+                 totalCash += t.grandTotal;
+              } else if (payment.method == "QRIS") {
+                 totalQris += t.grandTotal;
+              }
+            }
+          }
+        }

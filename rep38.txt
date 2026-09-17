@@ -1,0 +1,67 @@
+  void _addDirectlyToCart(Product product, double basePrice, String? variantName) {
+    setState(() {
+      final existingIndex = _cartItems.indexWhere((item) => item["id"] == product.id && item["variantName"] == variantName);
+      
+      int currentQty = 1;
+      if (existingIndex >= 0) {
+        currentQty = _cartItems[existingIndex]["qty"] + 1;
+        _cartItems[existingIndex]["qty"] = currentQty;
+      } else {
+        _cartItems.add({
+          "id": product.id, 
+          "name": product.name, 
+          "basePrice": basePrice, 
+          "price": basePrice, 
+          "qty": 1, 
+          "variantName": variantName,
+          "wholesaleMinQty": product.wholesaleMinQty,
+          "wholesalePrice": product.wholesalePrice
+        });
+      }
+      
+      // Update wholesale price for all items in cart
+      for (var item in _cartItems) {
+        if (item["wholesaleMinQty"] != null && item["wholesalePrice"] != null) {
+          if (item["qty"] >= item["wholesaleMinQty"]) {
+            item["price"] = item["wholesalePrice"];
+          } else {
+            item["price"] = item["basePrice"];
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _addToCart(Product product) async {
+    // Cek apakah produk ini memiliki varian
+    final variants = await (appDb.select(appDb.productVariants)..where((t) => t.productId.equals(product.id))).get();
+
+    if (variants.isEmpty) {
+      _addDirectlyToCart(product, product.sellingPrice, null);
+    } else {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text("Pilih Varian: ${product.name}"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: variants.map((v) => ListTile(
+                  title: Text(v.name),
+                  trailing: Text("Rp ${NumberFormat("#,###", "id_ID").format(v.price.toInt())}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addDirectlyToCart(product, v.price, v.name);
+                  },
+                )).toList()
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text("BATAL"))
+              ]
+            );
+          }
+        );
+      }
+    }
+  }

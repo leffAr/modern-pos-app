@@ -1,0 +1,19 @@
+                for (var row in payments) {
+                  final p = row.readTable(appDb.payments);
+                  if (p.method == "CASH") {
+                    totalCashSales += (p.amount - p.changeAmount);
+                  } else if (p.method == "QRIS") {
+                    totalQrisSales += p.amount;
+                  }
+                }
+
+                // Tambahkan DebtPayments yang diterima oleh user ini (karena DebtPayment tidak ada userId, kita asumsikan semua dp sejak buka shift masuk ke kasir ini)
+                final dps = await (appDb.select(appDb.debtPayments)
+                  ..where((d) => d.date.isBiggerOrEqualValue(shift.openedAt))
+                ).get();
+                for (var dp in dps) {
+                  totalCashSales += dp.amount; // Asumsi utang dibayar pakai cash
+                }
+
+                // Kas yang Diharapkan = Modal Awal + Total Penjualan Tunai + Total Pembayaran Utang Tunai
+                final expectedCash = (shift.openingCash ?? 0) + totalCashSales;

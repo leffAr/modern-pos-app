@@ -1,0 +1,18 @@
+                        final List<List<String>> data = [];
+                        double totalSubtotal = 0;
+                        double totalDiscount = 0;
+                        double totalTax = 0;
+                        double totalGrandTotal = 0;
+                        
+                        for (var r in results) {
+                          final tx = r.readTable(appDb.transactions);
+                          // Ambil metode pembayaran (bisa dari result kalau dijoin, tapi di sini kita bisa query atau baca)
+                          final payment = r.readTableOrNull(appDb.payments);
+                          final method = payment?.method ?? "-";
+
+                          // Ambil pelanggan (jika ada)
+                          String customerName = "-";
+                          if (tx.customerId != null) {
+                            final cust = await (appDb.select(appDb.customers)..where((c) => c.id.equals(tx.customerId!))).getSingleOrNull();
+                            if (cust != null) customerName = cust.name;
+                          }

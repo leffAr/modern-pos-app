@@ -1,0 +1,66 @@
+import 'dart:html' as html;
+
+  Future<void> _importExcel() async {
+    final input = html.FileUploadInputElement()..accept = '.xlsx';
+    input.click();
+    
+    input.onChange.listen((e) {
+      final files = input.files;
+      if (files == null || files.isEmpty) return;
+      final file = files[0];
+      
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(file);
+      reader.onLoadEnd.listen((e) async {
+        final bytes = reader.result as Uint8List;
+        
+        if (!mounted) return;
+        setState(() => _isLoading = true);
+        
+        try {
+          var excel = Excel.decodeBytes(bytes);
+          int count = 0;
+
+          await appDb.batch((batch) {
+            for (var table in excel.tables.keys) {
+              var rows = excel.tables[table]?.rows;
+              if (rows == null || rows.isEmpty) continue;
+              
+              for (int i = 1; i < rows.length; i++) {
+                var row = rows[i];
+                if (row.isEmpty || row[0] == null) continue;
+
+                batch.insert(
+                  appDb.products,
+                  ProductsCompanion.insert(
+                    id: "PROD-${DateTime.now().microsecondsSinceEpoch}-$i",
+                    name: row[0]?.value?.toString() ?? "Tanpa Nama",
+                    sku: drift.Value(row.length > 1 ? row[1]?.value?.toString() : null),
+                    barcode: drift.Value(row.length > 2 ? row[2]?.value?.toString() : null),
+                    buyPrice: double.tryParse(row.length > 3 ? row[3]?.value?.toString() ?? '0' : '0') ?? 0,
+                    sellPrice: double.tryParse(row.length > 4 ? row[4]?.value?.toString() ?? '0' : '0') ?? 0,
+                    unit: drift.Value(row.length > 6 ? row[6]?.value?.toString() ?? 'Pcs' : 'Pcs'),
+                    wholesaleMinQty: drift.Value(row.length > 7 ? (int.tryParse(row[7]?.value?.toString() ?? '0') ?? 0) : 0),
+                    wholesalePrice: drift.Value(row.length > 8 ? (double.tryParse(row[8]?.value?.toString() ?? '0') ?? 0) : 0),
+                  )
+                );
+                count++;
+              }
+            }
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$count produk berhasil diimport!")));
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal import: $e")));
+          }
+        } finally {
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
+        }
+      });
+    });
+  }

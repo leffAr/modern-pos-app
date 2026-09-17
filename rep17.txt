@@ -1,0 +1,25 @@
+
+        // Fetch Expenses
+        final exps = await (appDb.select(appDb.expenses)..where((e) => e.date.isBetweenValues(start, end))).get();
+        double totalExpenses = 0;
+        for (var e in exps) {
+          totalExpenses += e.amount;
+        }
+
+        double finalNetProfit = netSales - totalExpenses;
+
+        await ReceiptPrinterService.printAdminReport(
+          business: business,
+          startDate: start,
+          endDate: end,
+          totalGrossSales: grossSales,
+          totalDiscounts: discounts,
+          totalNetSales: netSales,
+          totalExpenses: totalExpenses,
+          finalNetProfit: finalNetProfit,
+          totalCash: totalCash,
+          totalQris: totalQris,
+          totalKasbon: totalKasbon,
+          totalTransactions: txs.length,
+          topProducts: topProducts,
+        );

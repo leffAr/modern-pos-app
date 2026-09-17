@@ -1,0 +1,118 @@
+class _ProductSelectionDialog extends StatefulWidget {
+  final Function(Product) onSelected;
+  const _ProductSelectionDialog({required this.onSelected});
+
+  @override
+  State<_ProductSelectionDialog> createState() => _ProductSelectionDialogState();
+}
+
+class _ProductSelectionDialogState extends State<_ProductSelectionDialog> {
+  final _searchCtrl = TextEditingController();
+  List<Product> _allProducts = [];
+  List<Product> _filteredProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    final prods = await (appDb.select(appDb.products)..where((p) => p.isActive.equals(true))).get();
+    if (mounted) {
+      setState(() {
+        _allProducts = prods;
+        _filteredProducts = prods;
+      });
+    }
+  }
+
+  void _filter(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredProducts = _allProducts;
+      } else {
+        final q = query.toLowerCase();
+        _filteredProducts = _allProducts.where((p) => 
+          p.name.toLowerCase().contains(q) || 
+          (p.sku != null && p.sku!.toLowerCase().contains(q)) ||
+          (p.barcode != null && p.barcode!.toLowerCase().contains(q))
+        ).toList();
+      }
+    });
+  }
+
+  Widget _buildImage(String? base64String) {
+    if (base64String == null || base64String.isEmpty) {
+      return Container(
+        width: 50,
+        height: 50,
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.inventory, color: Colors.grey),
+      );
+    }
+    try {
+      final bytes = base64Decode(base64String);
+      return Image.memory(bytes, width: 50, height: 50, fit: BoxFit.cover);
+    } catch (e) {
+      return Container(
+        width: 50,
+        height: 50,
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.broken_image, color: Colors.grey),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Pilih Produk"),
+      content: SizedBox(
+        width: 400,
+        height: 500,
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchCtrl,
+              decoration: const InputDecoration(
+                labelText: "Cari nama, SKU, barcode...",
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: _filter,
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _filteredProducts.isEmpty 
+                ? const Center(child: Text("Produk tidak ditemukan."))
+                : ListView.separated(
+                    itemCount: _filteredProducts.length,
+                    separatorBuilder: (ctx, i) => const Divider(height: 1),
+                    itemBuilder: (context, i) {
+                      final p = _filteredProducts[i];
+                      return ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: _buildImage(p.imageBase64),
+                        ),
+                        title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text("SKU: ${p.sku ?? '-'} | Barcode: ${p.barcode ?? '-'}"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          widget.onSelected(p);
+                        },
+                      );
+                    },
+                  ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup")),
+      ],
+    );
+  }
+}

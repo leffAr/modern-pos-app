@@ -1,0 +1,21 @@
+
+    return StreamBuilder<List<drift.TypedResult>>(
+      stream: query.watch(),
+      builder: (context, snapshot) {
+        return StreamBuilder<List<DebtPayment>>(
+          stream: appDb.select(appDb.debtPayments).watch(),
+          builder: (context, dpSnapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final results = snapshot.data ?? [];
+            final dps = dpSnapshot.data ?? [];
+            
+            // Filter debt payments by dateRange
+            final filteredDps = dateRange == null ? dps : dps.where((dp) => dp.date.isAfter(dateRange!.start) && dp.date.isBefore(dateRange!.end.add(const Duration(days: 1))));
+            double totalDebtPayments = 0;
+            for (var dp in filteredDps) totalDebtPayments += dp.amount;
+
+            if (results.isEmpty) {
+              return Center(

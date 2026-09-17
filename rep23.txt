@@ -1,0 +1,20 @@
+        final completedResults = results.where((r) => r.readTable(appDb.transactions).status == "COMPLETED").toList();
+        
+        double totalRevenue = 0;
+        double totalPiutang = 0;
+        for (var r in completedResults) {
+          final tx = r.readTable(appDb.transactions);
+          final payment = r.readTableOrNull(appDb.payments);
+          if (payment?.method == "KASBON") {
+             totalPiutang += tx.grandTotal;
+          } else {
+             totalRevenue += tx.grandTotal;
+          }
+        }
+        
+        // Pembayaran piutang mengurangi piutang, dan menambah revenue
+        totalPiutang -= totalDebtPayments;
+        if (totalPiutang < 0) totalPiutang = 0;
+        totalRevenue += totalDebtPayments;
+
+        final totalTransactions = completedResults.length;

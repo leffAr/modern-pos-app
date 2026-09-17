@@ -1,0 +1,24 @@
+class _SalesReportView extends StatelessWidget {
+  final DateTimeRange? dateRange;
+  const _SalesReportView({this.dateRange});
+
+  @override
+  Widget build(BuildContext context) {
+    final query = appDb.select(appDb.transactions).join([
+      drift.leftOuterJoin(appDb.payments, appDb.payments.transactionId.equalsExp(appDb.transactions.id))
+    ]);
+    
+    if (dateRange != null) {
+      query.where(appDb.transactions.createdAt.isBiggerOrEqualValue(dateRange!.start) & appDb.transactions.createdAt.isSmallerOrEqualValue(dateRange!.end.add(const Duration(days: 1))));
+    }
+
+    return StreamBuilder<List<drift.TypedResult>>(
+      stream: query.watch(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final results = snapshot.data ?? [];
+
+        if (results.isEmpty) {

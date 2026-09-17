@@ -1,0 +1,32 @@
+  void _onKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      final now = DateTime.now();
+      if (_lastKeyPressTime != null && now.difference(_lastKeyPressTime!) > const Duration(milliseconds: 100)) {
+        _barcodeBuffer = "";
+      }
+      _lastKeyPressTime = now;
+
+      if (event.logicalKey == LogicalKeyboardKey.enter) {
+        if (_barcodeBuffer.isNotEmpty) {
+          _processBarcode(_barcodeBuffer);
+          _barcodeBuffer = "";
+        }
+      } else if (event.character != null) {
+        _barcodeBuffer += event.character!;
+      }
+    }
+  }
+
+  Future<void> _processBarcode(String barcode) async {
+    final product = await (appDb.select(appDb.products)..where((p) => p.barcode.equals(barcode))).getSingleOrNull();
+    if (product != null) {
+      _addToCart(product);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${product.name} ditambahkan!"), duration: const Duration(seconds: 1)));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Barcode tidak ditemukan!")));
+      }
+    }
+  }

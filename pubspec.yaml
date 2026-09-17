@@ -1,0 +1,60 @@
+name: pos_mobile
+description: A modern POS application for multi-businesses.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  go_router: ^13.2.0
+  drift: ^2.16.0
+  sqlite3_flutter_libs: ^0.5.20
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  dio: ^5.4.0
+  connectivity_plus: ^5.0.2
+  mobile_scanner: ^3.5.5
+  printing: ^5.11.1
+  pdf: ^3.10.8
+  intl: ^0.19.0
+  uuid: ^4.3.3
+  equatable: ^2.0.5
+  freezed_annotation: ^2.4.1
+  excel: ^4.0.6
+  esc_pos_utils_plus: ^2.0.4
+  firebase_messaging: ^16.2.0
+  firebase_core: ^4.7.0
+  image_picker: ^1.1.2
+  file_saver: ^0.2.14
+  file_picker: ^11.0.3
+  image_picker_for_web: ^3.0.6
+  crypto: ^3.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.8
+  drift_dev: ^2.16.0
+  freezed: ^2.4.1
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    image_path: "assets/images/logo_v2.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
+  image_path: "assets/images/logo_v2.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/logo_transparent.png

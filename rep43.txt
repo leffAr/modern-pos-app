@@ -1,0 +1,19 @@
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.grey.shade100,
+          child: Row(
+            children: [
+              const Icon(Icons.person_outline),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _selectedCustomer != null 
+                    ? "${_selectedCustomer!.name} (Poin: ${_selectedCustomer!.points.toInt()})" 
+                    : "Walk-in Customer",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),

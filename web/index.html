@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Aplikasi kasir Modern POS">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Modern POS">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png?v=2"/>
+
+  <title>Modern POS</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <style>
+    body {
+      background-color: #f3f4f6; /* Tailwind gray-100 */
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Prevent scrolling during load */
+    }
+    #loading-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #f3f4f6;
+      z-index: 9999;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      transition: opacity 0.5s ease-out;
+    }
+    .logo-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .logo-image {
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      z-index: 10;
+      border-radius: 50%; /* Membuat gambar menjadi bulat sempurna */
+      background-color: white; /* Opsional: jika ada bagian transparan */
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .spinner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      border: 4px solid rgba(59, 130, 246, 0.2);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+    }
+    .loading-text {
+      margin-top: 32px;
+      color: #374151;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .loading-subtext {
+      margin-top: 8px;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <div id="loading-indicator">
+    <div class="logo-container">
+      <img src="icons/Icon-192.png" alt="Logo" class="logo-image" />
+      <div class="spinner"></div>
+    </div>
+    <div class="loading-text">Memuat Modern POS...</div>
+    <div class="loading-subtext">Menyiapkan aplikasi Anda</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+  <script>
+    // Initialize sql.js before Flutter starts
+    if (typeof initSqlJs !== 'undefined') {
+      initSqlJs({
+        locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/${file}`
+      }).then(function(SQL) {
+        window.SQL = SQL;
+        console.log("sql.js loaded successfully");
+      });
+    }
+
+    // Hide loading screen when Flutter renders its first frame
+    window.addEventListener("flutter-first-frame", function() {
+      var loadingIndicator = document.getElementById("loading-indicator");
+      if (loadingIndicator) {
+        loadingIndicator.style.opacity = "0";
+        setTimeout(function() {
+          loadingIndicator.remove();
+        }, 500); // Wait for transition to complete
+      }
+    });
+  </script>
+  <script src="flutter_bootstrap.js?v=20260914v83" async></script>
+</body>
+</html>

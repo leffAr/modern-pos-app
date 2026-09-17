@@ -1,0 +1,33 @@
+  Widget _buildSummaryCards({
+    required BuildContext context, 
+    required double revenueToday, 
+    required int txTodayCount,
+    required double avgToday,
+    required double allTimeRev,
+    required double netProfitToday,
+    required double expenseToday,
+    required double piutangToday,
+    required double allTimePiutang,
+  }) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final isTablet = MediaQuery.of(context).size.width >= 600 && MediaQuery.of(context).size.width < 1000;
+    final crossAxisCount = isMobile ? 2 : (isTablet ? 3 : 4);
+    final formatter = NumberFormat("#,###", "id_ID");
+
+    return GridView.count(
+      crossAxisCount: crossAxisCount,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: isMobile ? 1.3 : 1.8,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        _SummaryCard(title: "Penjualan Hari Ini", value: "Rp ${formatter.format(revenueToday.toInt())}", icon: Icons.attach_money, color: Colors.green),
+        _SummaryCard(title: "Piutang Hari Ini", value: "Rp ${formatter.format(piutangToday.toInt())}", icon: Icons.money_off, color: Colors.orange),
+        _SummaryCard(title: "Pengeluaran Hari Ini", value: "Rp ${formatter.format(expenseToday.toInt())}", icon: Icons.trending_down, color: Colors.red),
+        _SummaryCard(title: "Laba Bersih Hari Ini", value: "Rp ${formatter.format(netProfitToday.toInt())}", icon: Icons.savings, color: Colors.blue),
+        _SummaryCard(title: "Total Pendapatan", value: "Rp ${formatter.format(allTimeRev.toInt())}", icon: Icons.account_balance_wallet, color: Colors.purple),
+        _SummaryCard(title: "Total Piutang", value: "Rp ${formatter.format(allTimePiutang.toInt())}", icon: Icons.account_balance, color: Colors.orange.shade900),
+      ],
+    );
+  }

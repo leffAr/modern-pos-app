@@ -1,0 +1,23 @@
+        // Fetch Expenses
+        final exps = await (appDb.select(appDb.expenses)..where((e) => e.date.isBetweenValues(start, end))).get();
+        double totalExpenses = 0;
+        for (var e in exps) {
+          totalExpenses += e.amount;
+        }
+
+        // Fetch Debt Payments
+        final dps = await (appDb.select(appDb.debtPayments)..where((d) => d.date.isBetweenValues(start, end))).get();
+        double totalDebtPayments = 0;
+        for (var dp in dps) {
+          totalDebtPayments += dp.amount;
+        }
+
+        totalKasbon -= totalDebtPayments;
+        if (totalKasbon < 0) totalKasbon = 0;
+
+        netSales += totalDebtPayments;
+        totalCash += totalDebtPayments; // Anggap tunai
+
+        double finalNetProfit = netSales - totalExpenses;
+
+        await ReceiptPrinterService.printAdminReport(

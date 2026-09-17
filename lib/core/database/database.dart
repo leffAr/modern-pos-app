@@ -1,0 +1,92 @@
+import 'connection.dart';
+import 'package:drift/drift.dart';
+
+import 'tables.dart';
+
+part 'database.g.dart';
+
+@DriftDatabase(tables: [
+  Businesses, Branches, Roles, Users, SyncQueue,
+  Categories, Products, Inventory, Customers, Suppliers, Promos,
+  Transactions, TransactionItems, Payments, ProductVariants,
+  Shifts, Expenses, Purchases, PurchaseItems, Returns, DebtPayments,
+  StockOpnames, StockOpnameItems
+])
+class AppDatabase extends _$AppDatabase {
+  AppDatabase() : super(openConnection());
+
+  @override
+  int get schemaVersion => 14;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+        // Disini kita dapat insert default Roles
+        await batch((batch) {
+          batch.insertAll(roles, [
+            RolesCompanion.insert(id: 'role-owner', name: 'Owner'),
+            RolesCompanion.insert(id: 'role-admin', name: 'Admin'),
+            RolesCompanion.insert(id: 'role-manager', name: 'Manager'),
+            RolesCompanion.insert(id: 'role-cashier', name: 'Cashier'),
+          ]);
+        });
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          await m.addColumn(users, users.password);
+        }
+        if (from < 3) {
+          await m.createTable(promos);
+        }
+        if (from < 4) {
+          await m.addColumn(shifts, shifts.shiftName);
+        }
+        if (from < 5) {
+          await m.addColumn(businesses, businesses.taxPercentage);
+        }
+        if (from < 6) {
+          await m.addColumn(products, products.unit);
+        }
+        if (from < 7) {
+          await m.addColumn(businesses, businesses.enableTableNumber);
+          await m.addColumn(businesses, businesses.enableQueueNumber);
+          await m.addColumn(transactions, transactions.queueNumber);
+          await m.addColumn(transactions, transactions.tableNumber);
+        }
+        if (from < 8) {
+          await m.addColumn(customers, customers.debt);
+          await m.createTable(debtPayments);
+        }
+        if (from < 9) {
+          await m.addColumn(users, users.phone);
+        }
+        if (from < 10) {
+           await m.createTable(productVariants);
+           await m.addColumn(transactionItems, transactionItems.variantName);
+        }
+        if (from < 11) {
+           await m.addColumn(productVariants, productVariants.purchasePrice);
+        }
+        if (from < 12) {
+           await m.addColumn(transactions, transactions.dueDate);
+        }
+        if (from < 13) {
+           await m.addColumn(products, products.wholesalePrice);
+           await m.addColumn(products, products.wholesaleMinQty);
+           await m.addColumn(transactions, transactions.pointsEarned);
+           await m.addColumn(transactions, transactions.pointsUsed);
+           await m.createTable(stockOpnames);
+           await m.createTable(stockOpnameItems);
+        }
+        if (from < 14) {
+           await m.addColumn(transactions, transactions.discountNotes);
+        }
+      },
+    );
+  }
+}
+
+// Global instance untuk kemudahan akses (di production biasanya pakai Riverpod/GetIt)
+final appDb = AppDatabase();

@@ -1,0 +1,13 @@
+    final purchasePriceCtrl = TextEditingController(
+      text: product != null ? product.purchasePrice.toInt().toString() : "",
+    );
+    final sellingPriceCtrl = TextEditingController(
+      text: product != null ? product.sellingPrice.toInt().toString() : "",
+    );
+    final wholesalePriceCtrl = TextEditingController(
+      text: product != null && product.wholesalePrice != null ? product.wholesalePrice!.toInt().toString() : "",
+    );
+    final wholesaleMinQtyCtrl = TextEditingController(
+      text: product != null && product.wholesaleMinQty != null ? product.wholesaleMinQty!.toString() : "",
+    );
+    final unitCtrl = TextEditingController(text: product?.unit ?? "pcs");
