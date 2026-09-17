@@ -30,6 +30,10 @@ jobs:
       - name: Get Flutter Dependencies
         run: flutter pub get
 
+      - name: Patch all plugins build.gradle
+        run: |
+          find ~/.pub-cache -name "build.gradle" -exec sed -i 's/compileSdk flutter.compileSdkVersion/compileSdkVersion 34/g' {} +
+
       - name: Build APK
         run: flutter build apk --release -v > build_log.txt 2>&1
 
