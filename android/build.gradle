@@ -14,9 +14,11 @@ subprojects {
 }
 
 subprojects {
-    project.plugins.withId("com.android.library") {
-        project.android {
-            compileSdkVersion 34
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            project.android {
+                compileSdkVersion 34
+            }
         }
     }
 }
