@@ -8,6 +8,7 @@ plugins {
 android {
     namespace = "com.example.pos_mobile"
     compileSdk = flutter.compileSdkVersion
+    compileSdkVersion = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
