@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:drift/drift.dart' as drift;
-import 'dart:html' as html;
+import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' hide Border, BorderStyle;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -572,83 +572,84 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _importExcel() async {
-    final input = html.FileUploadInputElement()..accept = ".xlsx, .xls";
-    input.click();
-    
-    input.onChange.listen((e) {
-      final files = input.files;
-      if (files == null || files.isEmpty) return;
-      final file = files[0];
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
       
-      final reader = html.FileReader();
-      reader.readAsArrayBuffer(file);
-      reader.onLoadEnd.listen((e) async {
-        final bytes = reader.result as Uint8List;
-        
-        try {
-          var excel = Excel.decodeBytes(bytes);
-          int count = 0;
-          final biz = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
-          final bizId = biz?.id ?? "BIZ-1";
+      final bytes = result.files.first.bytes;
+      if (bytes == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Gagal membaca file")));
+        }
+        return;
+      }
 
-          await appDb.batch((batch) {
-            for (var table in excel.tables.keys) {
-              var rows = excel.tables[table]?.rows;
-              if (rows == null || rows.isEmpty) continue;
-              
-              for (int i = 1; i < rows.length; i++) {
-                var row = rows[i];
-                if (row.isEmpty || row[0] == null || row[0]!.value == null) continue;
+      var excel = Excel.decodeBytes(bytes);
+      int count = 0;
+      final biz = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
+      final bizId = biz?.id ?? "BIZ-1";
 
-                String name = row[0]!.value.toString();
-                String? sku = row.length > 1 && row[1]?.value != null ? row[1]!.value.toString() : null;
-                String? barcode = row.length > 2 && row[2]?.value != null ? row[2]!.value.toString() : null;
-                double buyPrice = row.length > 3 && row[3]?.value != null ? double.tryParse(row[3]!.value.toString()) ?? 0 : 0;
-                double sellPrice = row.length > 4 && row[4]?.value != null ? double.tryParse(row[4]!.value.toString()) ?? 0 : 0;
-                int stock = row.length > 5 && row[5]?.value != null ? int.tryParse(row[5]!.value.toString()) ?? 0 : 0;
-                String unit = row.length > 6 && row[6]?.value != null ? row[6]!.value.toString() : "pcs";
+      await appDb.batch((batch) {
+        for (var table in excel.tables.keys) {
+          var rows = excel.tables[table]?.rows;
+          if (rows == null || rows.isEmpty) continue;
+          
+          for (int i = 1; i < rows.length; i++) {
+            var row = rows[i];
+            if (row.isEmpty || row[0] == null || row[0]!.value == null) continue;
 
-                final productId = "PROD-" + DateTime.now().microsecondsSinceEpoch.toString() + "-$i";
+            String name = row[0]!.value.toString();
+            String? sku = row.length > 1 && row[1]?.value != null ? row[1]!.value.toString() : null;
+            String? barcode = row.length > 2 && row[2]?.value != null ? row[2]!.value.toString() : null;
+            double buyPrice = row.length > 3 && row[3]?.value != null ? double.tryParse(row[3]!.value.toString()) ?? 0 : 0;
+            double sellPrice = row.length > 4 && row[4]?.value != null ? double.tryParse(row[4]!.value.toString()) ?? 0 : 0;
+            int stock = row.length > 5 && row[5]?.value != null ? int.tryParse(row[5]!.value.toString()) ?? 0 : 0;
+            String unit = row.length > 6 && row[6]?.value != null ? row[6]!.value.toString() : "pcs";
 
-                batch.insert(
-                  appDb.products,
-                  ProductsCompanion.insert(
-                    id: productId,
-                    businessId: bizId,
-                    name: name,
-                    sku: drift.Value(sku),
-                    barcode: drift.Value(barcode),
-                    purchasePrice: drift.Value(buyPrice),
-                    sellingPrice: drift.Value(sellPrice),
-                    unit: drift.Value(unit),
-                    isActive: const drift.Value(true),
-                  ),
-                );
+            final productId = "PROD-" + DateTime.now().microsecondsSinceEpoch.toString() + "-$i";
 
-                batch.insert(
-                  appDb.inventory,
-                  InventoryCompanion.insert(
-                    id: "INV-" + DateTime.now().microsecondsSinceEpoch.toString() + "-$i",
-                    productId: productId,
-                    branchId: "BRANCH-1",
-                    stock: drift.Value(stock),
-                  ),
-                );
-                count++;
-              }
-            }
-          });
+            batch.insert(
+              appDb.products,
+              ProductsCompanion.insert(
+                id: productId,
+                businessId: bizId,
+                name: name,
+                sku: drift.Value(sku),
+                barcode: drift.Value(barcode),
+                purchasePrice: drift.Value(buyPrice),
+                sellingPrice: drift.Value(sellPrice),
+                unit: drift.Value(unit),
+                isActive: const drift.Value(true),
+              ),
+            );
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$count produk berhasil diimport!")));
-          }
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal import: $e")));
+            batch.insert(
+              appDb.inventory,
+              InventoryCompanion.insert(
+                id: "INV-" + DateTime.now().microsecondsSinceEpoch.toString() + "-$i",
+                productId: productId,
+                branchId: "BRANCH-1",
+                stock: drift.Value(stock),
+              ),
+            );
+            count++;
           }
         }
       });
-    });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$count produk berhasil diimport!")));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal import: $e")));
+      }
+    }
   }
 
   @override
