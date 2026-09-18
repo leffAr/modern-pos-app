@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (widget.isLoggedIn) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => StreamBuilder<drift.User>(
+          builder: (context) => StreamBuilder<User>(
             stream: (appDb.select(appDb.users)..where((u) => u.id.equals(widget.userId))).watchSingle(),
             builder: (context, snapshot) {
               final liveName = snapshot.data?.name ?? widget.userName;

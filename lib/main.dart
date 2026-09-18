@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'features/dashboard/presentation/main_layout.dart';
-import 'features/auth/presentation/login_screen.dart';
 import 'features/splash/presentation/splash_screen.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
