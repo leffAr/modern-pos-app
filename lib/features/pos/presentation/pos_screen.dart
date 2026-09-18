@@ -1238,7 +1238,7 @@ class _POSScreenState extends State<POSScreen> {
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.pause, size: 18),
                       onPressed: _cartItems.isEmpty ? null : _holdBill,
-                      label: const Text('HOLD'),
+                      label: const FittedBox(child: Text('HOLD', maxLines: 1)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1254,7 +1254,7 @@ class _POSScreenState extends State<POSScreen> {
                             child: const Icon(Icons.receipt_long, size: 18),
                           ),
                           onPressed: () => _showHoldBillsDialog(),
-                          label: const Text('BILLS'),
+                          label: const FittedBox(child: Text('BILLS', maxLines: 1)),
                         );
                       }
                     ),
@@ -1485,6 +1485,140 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
 
   @override
   Widget build(BuildContext context) {
+    Widget _buildLeftPanel(double totalAfterPoints, double change, NumberFormat formatter) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Total Tagihan
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Total Tagihan", style: TextStyle(color: Colors.blueGrey, fontSize: 14)),
+                Text("Rp ${formatter.format(totalAfterPoints)}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.blue.shade900)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          if (widget.hasCustomer && widget.customerPoints > 0)
+            SwitchListTile(
+              title: const Text("Gunakan Poin"),
+              subtitle: Text("Poin tersedia: ${widget.customerPoints.toInt()} (Rp ${formatter.format(widget.customerPoints.toInt())})"),
+              value: _usePoints,
+              onChanged: (val) {
+                setState(() {
+                  _usePoints = val;
+                });
+              },
+            ),
+          const SizedBox(height: 8),
+
+          if (widget.enableTableNumber) ...[
+            TextField(
+              controller: _tableCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Nomor Meja / Nama Pemesan',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.table_restaurant),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          
+          if (_paymentMethod == 'CASH') ...[
+            // Input Nominal
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.blue.shade200, width: 2),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Uang Diterima", style: TextStyle(color: Colors.blueGrey, fontSize: 14)),
+                  Text("Rp ${formatter.format(_paidAmount)}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.green.shade700)),
+                ],
+              ),
+            ),
+          ] else if (_paymentMethod == 'QRIS') ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(8)),
+              child: const Row(
+                children: [
+                  Icon(Icons.qr_code_2, size: 40, color: Colors.purple),
+                  SizedBox(width: 16),
+                  Expanded(child: Text("Pembayaran via QRIS. Pelanggan memindai kode QR toko.", style: TextStyle(color: Colors.purple))),
+                ],
+              ),
+            ),
+          ] else ...[ // KASBON
+            TextField(
+              readOnly: true,
+              decoration: InputDecoration(
+                labelText: 'Jatuh Tempo Pembayaran',
+                border: const OutlineInputBorder(),
+                suffixIcon: const Icon(Icons.calendar_today),
+                errorText: _dueDate == null ? 'Harus diisi' : null,
+              ),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now().add(const Duration(days: 7)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (date != null) {
+                  setState(() => _dueDate = date);
+                }
+              },
+              controller: TextEditingController(text: _dueDate != null ? DateFormat('dd MMM yyyy').format(_dueDate!) : ''),
+            ),
+          ],
+          const SizedBox(height: 16),
+          // Kembalian
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(color: change > 0 ? Colors.green.shade50 : Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Kembalian", style: TextStyle(color: Colors.blueGrey, fontSize: 14)),
+                Text("Rp ${formatter.format(change > 0 ? change : 0)}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: change > 0 ? Colors.green.shade900 : Colors.black54)),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget _buildRightPanel() {
+      if (_paymentMethod != 'CASH') return const SizedBox();
+      return GridView.count(
+        crossAxisCount: 3,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1.4, // Buat tombol numpad sedikit lebih pipih agar muat
+        children: [
+          _buildNumpadBtn('1'), _buildNumpadBtn('2'), _buildNumpadBtn('3'),
+          _buildNumpadBtn('4'), _buildNumpadBtn('5'), _buildNumpadBtn('6'),
+          _buildNumpadBtn('7'), _buildNumpadBtn('8'), _buildNumpadBtn('9'),
+          _buildNumpadBtn('C', color: Colors.red.shade50), _buildNumpadBtn('0'), _buildNumpadBtn('00'),
+          _buildNumpadBtn('+10k', color: Colors.blue.shade50), _buildNumpadBtn('+50k', color: Colors.blue.shade50), _buildNumpadBtn('+100k', color: Colors.blue.shade50),
+          _buildNumpadBtn('PAS', color: Colors.green.shade50), _buildNumpadBtn('⌫', color: Colors.grey.shade200),
+        ],
+      );
+    }
+
     double totalAfterPoints = widget.total;
     if (_usePoints && widget.customerPoints > 0) {
        totalAfterPoints -= widget.customerPoints;
@@ -1498,16 +1632,19 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
     final change = _paymentMethod == "KASBON" ? 0.0 : (_paidAmount - totalAfterPoints);
     bool isEnough = _paymentMethod == "KASBON" ? (_dueDate != null) : (_paidAmount >= totalAfterPoints);
     final formatter = NumberFormat("#,###", "id_ID");
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return AlertDialog(
       titlePadding: const EdgeInsets.only(top: 16, left: 24, right: 24),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      title: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           const Text('Pembayaran', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           // Metode Pembayaran as ChoiceChips
-          Row(
+          Wrap(
+            spacing: 8,
             children: [
               ChoiceChip(
                 label: const Text('Tunai'),
@@ -1516,7 +1653,6 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
                   if (val) setState(() { _paymentMethod = 'CASH'; _amountCtrl.text = _paidAmount.toInt().toString(); });
                 },
               ),
-              const SizedBox(width: 8),
               ChoiceChip(
                 label: const Text('QRIS'),
                 selected: _paymentMethod == 'QRIS',
@@ -1524,7 +1660,6 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
                   if (val) setState(() => _paymentMethod = 'QRIS');
                 },
               ),
-              const SizedBox(width: 8),
               ChoiceChip(
                 label: const Text('KASBON'),
                 selected: _paymentMethod == 'KASBON',
@@ -1538,176 +1673,18 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
         ],
       ),
       content: SizedBox(
-        width: 700,
+        width: isMobile ? double.maxFinite : 700,
         child: SingleChildScrollView(
-          child: Row(
+          child: Flex(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // PANEL KIRI (Ringkasan Tagihan, Kembalian, Input)
-              Expanded(
-                flex: 1,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Total Tagihan
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Total Tagihan", style: TextStyle(color: Colors.blueGrey, fontSize: 14)),
-                          Text("Rp ${formatter.format(totalAfterPoints)}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.blue.shade900)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (widget.hasCustomer && widget.customerPoints > 0)
-                      SwitchListTile(
-                        title: const Text("Gunakan Poin"),
-                        subtitle: Text("Poin tersedia: ${widget.customerPoints.toInt()} (Rp ${formatter.format(widget.customerPoints.toInt())})"),
-                        value: _usePoints,
-                        onChanged: (val) {
-                          setState(() {
-                            _usePoints = val;
-                            // logic total diskon poin akan di-handle di onComplete
-                          });
-                        },
-                      ),
-                    const SizedBox(height: 8),
-
-                    if (widget.enableTableNumber) ...[
-                      TextField(
-                        controller: _tableCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Nomor Meja / Nama Pemesan',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.table_restaurant),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    
-                    if (_paymentMethod == 'CASH') ...[
-                      // Input Nominal
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.blue.shade200, width: 2),
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.white,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const Text('Uang Diterima', style: TextStyle(color: Colors.blueGrey, fontSize: 12)),
-                            Text(
-                              'Rp ${formatter.format(_paidAmount)}',
-                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Kembalian
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(color: change >= 0 ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Kembalian', style: TextStyle(color: Colors.blueGrey, fontSize: 14)),
-                            Text(
-                              change > 0 ? 'Rp ${formatter.format(change)}' : 'Rp 0',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: change >= 0 ? Colors.green.shade900 : Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ] else if (_paymentMethod == 'QRIS') ...[
-                      // Info QRIS
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
-                        child: const Column(
-                          children: [
-                            Icon(Icons.qr_code_2, size: 48, color: Colors.green),
-                            SizedBox(height: 8),
-                            Text('Menunggu pembayaran QRIS...', style: TextStyle(color: Colors.green)),
-                            Text('Tagihan sudah otomatis pas, tidak ada kembalian.', textAlign: TextAlign.center),
-                          ],
-                        ),
-                      ),
-                    ] else if (_paymentMethod == 'KASBON') ...[
-                      // Kasbon
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.money_off, size: 32, color: Colors.orange),
-                                SizedBox(width: 8),
-                                Text('Pencatatan Kasbon', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 16)),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Text('Pilih Tanggal Jatuh Tempo pembayaran (Wajib):', style: TextStyle(fontSize: 12)),
-                            const SizedBox(height: 8),
-                            ElevatedButton.icon(
-                              onPressed: () async {
-                                final date = await showDatePicker(
-                                  context: context,
-                                  initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 7)),
-                                  firstDate: DateTime.now(),
-                                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                                );
-                                if (date != null) {
-                                  setState(() {
-                                    _dueDate = date;
-                                  });
-                                }
-                              },
-                              icon: const Icon(Icons.calendar_month),
-                              label: Text(_dueDate == null ? 'Pilih Tanggal' : DateFormat('dd MMMM yyyy', 'id_ID').format(_dueDate!)),
-                            )
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              // PANEL KANAN (Numpad)
-              if (_paymentMethod == 'CASH') ...[
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 1,
-                  child: GridView.count(
-                    crossAxisCount: 3,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 1.2,
-                    children: [
-                      _buildNumpadBtn('1'), _buildNumpadBtn('2'), _buildNumpadBtn('3'),
-                      _buildNumpadBtn('4'), _buildNumpadBtn('5'), _buildNumpadBtn('6'),
-                      _buildNumpadBtn('7'), _buildNumpadBtn('8'), _buildNumpadBtn('9'),
-                      _buildNumpadBtn('C', color: Colors.red.shade50), _buildNumpadBtn('0'), _buildNumpadBtn('000'),
-                      _buildNumpadBtn('+10k', color: Colors.blue.shade50), _buildNumpadBtn('+50k', color: Colors.blue.shade50), _buildNumpadBtn('+100k', color: Colors.blue.shade50),
-                      _buildNumpadBtn('PAS', color: Colors.green.shade100), _buildNumpadBtn('⌫', color: Colors.grey.shade200),
-                    ],
-                  ),
-                ),
-              ],
+              // PANEL KIRI
+              isMobile ? _buildLeftPanel(totalAfterPoints, change, formatter) : Expanded(flex: 1, child: _buildLeftPanel(totalAfterPoints, change, formatter)),
+              if (!isMobile) const SizedBox(width: 24),
+              if (isMobile) const SizedBox(height: 24),
+              // PANEL KANAN
+              isMobile ? _buildRightPanel() : Expanded(flex: 1, child: _buildRightPanel()),
             ],
           ),
         ),

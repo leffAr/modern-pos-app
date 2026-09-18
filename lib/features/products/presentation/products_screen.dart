@@ -11,7 +11,8 @@ import '../../../core/database/database.dart';
 import '../../../core/utils/web_image_picker.dart';
 
 class ProductsScreen extends StatefulWidget {
-  const ProductsScreen({super.key});
+  final bool isReadOnly;
+  const ProductsScreen({super.key, this.isReadOnly = false});
 
   @override
   State<ProductsScreen> createState() => _ProductsScreenState();
@@ -428,13 +429,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("BATAL"),
-              ),
-              FilledButton(
-                onPressed: () async {
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(widget.isReadOnly ? "TUTUP" : "BATAL"),
+                ),
+                if (!widget.isReadOnly)
+                  FilledButton(
+                    onPressed: () async {
                   final name = nameCtrl.text.trim();
                   if (name.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -779,6 +781,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               final p = products[index];
               final margin = p.sellingPrice - p.purchasePrice;
               return ListTile(
+                onTap: widget.isReadOnly ? () => _showAddEditDialog(p) : null,
                 leading: Container(
                   width: 50,
                   height: 50,
@@ -878,7 +881,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                   ],
                 ),
-                trailing: PopupMenuButton<String>(
+                trailing: widget.isReadOnly ? null : PopupMenuButton<String>(
                   onSelected: (val) {
                     if (val == 'edit') _showAddEditDialog(p);
                     if (val == 'delete') _deleteProduct(p);
@@ -897,7 +900,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     ),
   ],
 ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: widget.isReadOnly ? null : FloatingActionButton.extended(
         onPressed: () => _showAddEditDialog(),
         icon: const Icon(Icons.add),
         label: const Text('Tambah Produk'),

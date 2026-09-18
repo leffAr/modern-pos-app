@@ -36,6 +36,7 @@ class _MainLayoutState extends State<MainLayout> {
     }
     if (widget.userRole == 'Kasir') {
       screens.add(POSScreen(cashierName: widget.userName));
+      screens.add(const ProductsScreen(isReadOnly: true));
     }
     if (widget.userRole == 'Admin') {
       screens.add(const ProductsScreen());
@@ -72,6 +73,7 @@ class _MainLayoutState extends State<MainLayout> {
     // 2. POS / Kasir (HANYA KASIR)
     if (widget.userRole == 'Kasir') {
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.point_of_sale_outlined), selectedIcon: Icon(Icons.point_of_sale), label: Text('POS / Kasir')));
+      _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: Text('Produk')));
     }
 
     // 3. Menu khusus Admin (Produk, Kategori, Diskon/Promo, Pembelian, Laporan)
@@ -240,9 +242,14 @@ class _MainLayoutState extends State<MainLayout> {
                         onPressed: () => _onDestinationSelected(0),
                       ),
                       IconButton(
-                        tooltip: 'Shift',
-                        icon: Icon(Icons.access_time, color: _selectedIndex == 1 ? Colors.blue : Colors.grey),
+                        tooltip: 'Produk',
+                        icon: Icon(Icons.inventory_2, color: _selectedIndex == 1 ? Colors.blue : Colors.grey),
                         onPressed: () => _onDestinationSelected(1),
+                      ),
+                      IconButton(
+                        tooltip: 'Shift',
+                        icon: Icon(Icons.access_time, color: _selectedIndex == 2 ? Colors.blue : Colors.grey),
+                        onPressed: () => _onDestinationSelected(2),
                       ),
                     ],
                   ],
