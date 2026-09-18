@@ -33,6 +33,7 @@ dependencies:
   file_picker: ^11.0.3
   image_picker_for_web: ^3.0.6
   crypto: ^3.0.7
+  flutter_native_splash: ^2.4.4
 
 dev_dependencies:
   flutter_test:
@@ -58,3 +59,11 @@ flutter:
   assets:
     - assets/images/
     - assets/images/logo_transparent.png
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/images/logo_transparent.png"
+  android_12:
+    color: "#FFFFFF"
+    image: "assets/images/logo_transparent.png"
+
