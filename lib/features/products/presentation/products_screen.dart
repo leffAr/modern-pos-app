@@ -573,7 +573,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Future<void> _importExcel() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls'],
         withData: true,
