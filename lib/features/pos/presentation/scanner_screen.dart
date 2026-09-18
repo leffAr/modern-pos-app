@@ -11,6 +11,7 @@ class ScannerScreen extends StatefulWidget {
 class _ScannerScreenState extends State<ScannerScreen> {
   final MobileScannerController _cameraController = MobileScannerController();
   final _manualInputController = TextEditingController();
+  bool _hasPopped = false;
 
   @override
   void dispose() {
@@ -68,11 +69,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 MobileScanner(
                   controller: _cameraController,
                   onDetect: (capture) {
+                    if (_hasPopped) return;
                     final List<Barcode> barcodes = capture.barcodes;
                     if (barcodes.isNotEmpty) {
                       final String code = barcodes.first.rawValue ?? '';
-                      // Tutup layar dan kembalikan kode barcode
-                      Navigator.pop(context, code);
+                      if (code.isNotEmpty) {
+                        _hasPopped = true;
+                        Navigator.pop(context, code);
+                      }
                     }
                   },
                 ),
@@ -108,14 +112,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.check_circle, color: Colors.green),
                         onPressed: () {
+                          if (_hasPopped) return;
                           if (_manualInputController.text.isNotEmpty) {
+                            _hasPopped = true;
                             Navigator.pop(context, _manualInputController.text);
                           }
                         },
                       ),
                     ),
                     onSubmitted: (val) {
-                      if (val.isNotEmpty) Navigator.pop(context, val);
+                      if (_hasPopped) return;
+                      if (val.isNotEmpty) {
+                        _hasPopped = true;
+                        Navigator.pop(context, val);
+                      }
                     },
                   ),
                 ],
