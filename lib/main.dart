@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/dashboard/presentation/main_layout.dart';
 import 'features/auth/presentation/login_screen.dart';
+import 'features/splash/presentation/splash_screen.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/database/database.dart';
@@ -72,15 +73,12 @@ class ModernPOSApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
       ),
-      home: isLoggedIn 
-          ? StreamBuilder<User>(
-              stream: (appDb.select(appDb.users)..where((u) => u.id.equals(userId))).watchSingle(),
-              builder: (context, snapshot) {
-                final liveName = snapshot.data?.name ?? userName;
-                return MainLayout(userRole: userRole, userName: liveName, userId: userId);
-              },
-            ) 
-          : const LoginScreen(),
+      home: SplashScreen(
+        isLoggedIn: isLoggedIn,
+        userRole: userRole,
+        userName: userName,
+        userId: userId,
+      ),
     );
   }
 }
