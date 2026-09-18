@@ -98,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(32), // Padding diperbesar agar logo terlihat lebih kecil di dalam lingkaran putih
                     child: Image.asset(
                       'assets/images/logo_transparent.png',
                       fit: BoxFit.contain,
