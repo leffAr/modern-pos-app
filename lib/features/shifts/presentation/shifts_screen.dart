@@ -19,6 +19,32 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
   final _closeCashCtrl = TextEditingController();
   String _selectedShiftName = 'Shift 1';
 
+  Stream<List<Shift>>? _adminShiftsStream;
+  Stream<List<Shift>>? _cashierShiftsStream;
+  String? _actualUserId;
+  bool _isLoadingCashier = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.userRole == 'Admin') {
+      _adminShiftsStream = (appDb.select(appDb.shifts)..orderBy([(t) => drift.OrderingTerm.desc(t.openedAt)])).watch();
+    } else {
+      _loadCashierData();
+    }
+  }
+
+  Future<void> _loadCashierData() async {
+    final user = await (appDb.select(appDb.users)..where((u) => u.name.equals(widget.userName))).getSingleOrNull();
+    if (mounted) {
+      setState(() {
+        _actualUserId = user?.id ?? "U-1";
+        _cashierShiftsStream = (appDb.select(appDb.shifts)..where((t) => t.status.equals('OPEN') & t.userId.equals(_actualUserId!))..limit(1)).watch();
+        _isLoadingCashier = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _openCashCtrl.dispose();
@@ -38,12 +64,10 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
   }
 
   Widget _buildAdminView() {
-    final query = appDb.select(appDb.shifts)..orderBy([(t) => drift.OrderingTerm.desc(t.openedAt)]);
-    
     return Scaffold(
       appBar: AppBar(title: const Text('Laporan Shift & Kas')),
       body: StreamBuilder<List<Shift>>(
-        stream: query.watch(),
+        stream: _adminShiftsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
           final shifts = snapshot.data ?? [];
@@ -152,29 +176,22 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
   Widget _buildCashierView() {
     return Scaffold(
       appBar: AppBar(title: const Text('Manajemen Shift Kasir')),
-      body: FutureBuilder<User?>(
-        future: (appDb.select(appDb.users)..where((u) => u.name.equals(widget.userName))).getSingleOrNull(),
-        builder: (context, userSnapshot) {
-          if (userSnapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-          final actualUserId = userSnapshot.data?.id ?? "U-1";
-          final query = appDb.select(appDb.shifts)..where((t) => t.status.equals('OPEN') & t.userId.equals(actualUserId))..limit(1);
-
-          return StreamBuilder<List<Shift>>(
-            stream: query.watch(),
+      body: _isLoadingCashier 
+        ? const Center(child: CircularProgressIndicator())
+        : StreamBuilder<List<Shift>>(
+            stream: _cashierShiftsStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
               
               final shifts = snapshot.data ?? [];
-          if (shifts.isEmpty) {
-            return _buildOpenShiftForm();
-          } else {
-            return _buildActiveShiftInfo(shifts.first);
-          }
-        },
-      );
-     },
-    ),
-   );
+              if (shifts.isEmpty) {
+                return _buildOpenShiftForm();
+              } else {
+                return _buildActiveShiftInfo(shifts.first);
+              }
+            },
+          ),
+    );
   }
 
   Widget _buildOpenShiftForm() {
@@ -226,8 +243,7 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
                   onPressed: () async {
                     if (_openCashCtrl.text.isEmpty) return;
                     final cash = double.tryParse(_openCashCtrl.text) ?? 0.0;
-                    final user = await (appDb.select(appDb.users)..where((u) => u.name.equals(widget.userName))).getSingleOrNull();
-                    final actualUserId = user?.id ?? "U-1";
+                    final actualUserId = _actualUserId ?? "U-1";
 
                     await appDb.into(appDb.shifts).insert(
                       ShiftsCompanion.insert(
