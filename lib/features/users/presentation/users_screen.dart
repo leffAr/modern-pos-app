@@ -92,7 +92,22 @@ class _UsersScreenState extends State<UsersScreen> {
                 TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
                 FilledButton(
                   onPressed: () async {
-                    if (nameController.text.trim().isEmpty) return;
+                    final nameText = nameController.text.trim();
+                    final emailText = emailController.text.trim();
+                    final passText = passwordController.text.trim();
+                    
+                    if (nameText.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nama Lengkap tidak boleh kosong')));
+                      return;
+                    }
+                    if (emailText.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email / Username tidak boleh kosong')));
+                      return;
+                    }
+                    if (!isEditing && passText.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password harus diisi untuk pengguna baru')));
+                      return;
+                    }
 
                     String _hashString(String input) {
                       final bytes = utf8.encode(input);
@@ -100,7 +115,6 @@ class _UsersScreenState extends State<UsersScreen> {
                       return digest.toString();
                     }
 
-                    final passText = passwordController.text.trim();
                     final pinText = pinController.text.trim();
                     
                     String finalPassword = user?.password ?? '';
