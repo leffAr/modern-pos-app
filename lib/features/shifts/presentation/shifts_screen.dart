@@ -15,6 +15,17 @@ class ShiftsScreen extends StatefulWidget {
 }
 
 class _ShiftsScreenState extends State<ShiftsScreen> {
+  final _openCashCtrl = TextEditingController();
+  final _closeCashCtrl = TextEditingController();
+  String _selectedShiftName = 'Shift 1';
+
+  @override
+  void dispose() {
+    _openCashCtrl.dispose();
+    _closeCashCtrl.dispose();
+    super.dispose();
+  }
+
   final formatter = NumberFormat('#,###', 'id_ID');
 
   @override
@@ -167,84 +178,77 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
   }
 
   Widget _buildOpenShiftForm() {
-    final cashCtrl = TextEditingController();
-    String selectedShiftName = 'Shift 1';
-
     return Center(
       child: Card(
         margin: const EdgeInsets.all(32),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: StatefulBuilder(
-            builder: (context, setStateSB) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.storefront, size: 64, color: Colors.indigo),
-                  const SizedBox(height: 16),
-                  const Text('Buka Shift Baru', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text('Pilih Shift dan masukkan uang modal awal di laci kasir.', textAlign: TextAlign.center),
-                  const SizedBox(height: 24),
-                  DropdownButtonFormField<String>(
-                    value: selectedShiftName,
-                    decoration: const InputDecoration(
-                      labelText: 'Pilih Shift',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.schedule),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'Shift 1', child: Text('Shift 1 (Pagi)')),
-                      DropdownMenuItem(value: 'Shift 2', child: Text('Shift 2 (Siang)')),
-                      DropdownMenuItem(value: 'Shift 3', child: Text('Shift 3 (Malam)')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setStateSB(() => selectedShiftName = val);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: cashCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Uang Kas Awal (Rp)',
-                      prefixIcon: Icon(Icons.money),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: FilledButton(
-                      onPressed: () async {
-                        if (cashCtrl.text.isEmpty) return;
-                        final cash = double.tryParse(cashCtrl.text) ?? 0.0;
-                        final user = await (appDb.select(appDb.users)..where((u) => u.name.equals(widget.userName))).getSingleOrNull();
-                        final actualUserId = user?.id ?? "U-1";
-
-                        await appDb.into(appDb.shifts).insert(
-                          ShiftsCompanion.insert(
-                            id: 'SHF-${DateTime.now().millisecondsSinceEpoch}',
-                            branchId: 'CABANG-1', 
-                            userId: actualUserId,
-                            shiftName: drift.Value(selectedShiftName),
-                            openingCash: drift.Value(cash),
-                            status: const drift.Value('OPEN'),
-                            openedAt: drift.Value(DateTime.now()),
-                          )
-                        );
-                        
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Shift Berhasil Dibuka!')));
-                        }
-                      },
-                      child: const Text('Buka Shift Sekarang', style: TextStyle(fontSize: 16)),
-                    ),
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.storefront, size: 64, color: Colors.indigo),
+              const SizedBox(height: 16),
+              const Text('Buka Shift Baru', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('Pilih Shift dan masukkan uang modal awal di laci kasir.', textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              DropdownButtonFormField<String>(
+                value: _selectedShiftName,
+                decoration: const InputDecoration(
+                  labelText: 'Pilih Shift',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.schedule),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Shift 1', child: Text('Shift 1 (Pagi)')),
+                  DropdownMenuItem(value: 'Shift 2', child: Text('Shift 2 (Siang)')),
+                  DropdownMenuItem(value: 'Shift 3', child: Text('Shift 3 (Malam)')),
                 ],
-              );
-            },
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedShiftName = val);
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _openCashCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Uang Kas Awal (Rp)',
+                  prefixIcon: Icon(Icons.money),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton(
+                  onPressed: () async {
+                    if (_openCashCtrl.text.isEmpty) return;
+                    final cash = double.tryParse(_openCashCtrl.text) ?? 0.0;
+                    final user = await (appDb.select(appDb.users)..where((u) => u.name.equals(widget.userName))).getSingleOrNull();
+                    final actualUserId = user?.id ?? "U-1";
+
+                    await appDb.into(appDb.shifts).insert(
+                      ShiftsCompanion.insert(
+                        id: 'SHF-${DateTime.now().millisecondsSinceEpoch}',
+                        branchId: 'CABANG-1', 
+                        userId: actualUserId,
+                        shiftName: drift.Value(_selectedShiftName),
+                        openingCash: drift.Value(cash),
+                        status: const drift.Value('OPEN'),
+                        openedAt: drift.Value(DateTime.now()),
+                      )
+                    );
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Shift Berhasil Dibuka!')));
+                    }
+                  },
+                  child: const Text('Buka Shift Sekarang', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -252,8 +256,6 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
   }
 
   Widget _buildActiveShiftInfo(Shift shift) {
-    final closingCashCtrl = TextEditingController();
-
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -279,7 +281,7 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
           const Text('Hitung fisik uang di laci dan masukkan di bawah ini sebelum menutup shift:', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           TextField(
-            controller: closingCashCtrl,
+            controller: _closeCashCtrl,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
               labelText: 'Uang Kas Akhir Fisik (Rp)',
@@ -296,11 +298,11 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
               icon: const Icon(Icons.lock),
               label: const Text('Tutup Shift', style: TextStyle(fontSize: 16)),
               onPressed: () async {
-                if (closingCashCtrl.text.isEmpty) {
+                if (_closeCashCtrl.text.isEmpty) {
                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Masukkan kas akhir fisik!')));
                    return;
                 }
-                final closingCash = double.tryParse(closingCashCtrl.text) ?? 0.0;
+                final closingCash = double.tryParse(_closeCashCtrl.text) ?? 0.0;
 
                 // Ambil penjualan TUNAI dan QRIS
                 final payments = await (appDb.select(appDb.payments).join([
