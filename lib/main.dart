@@ -25,6 +25,7 @@ void main() async {
   final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   final userRole = prefs.getString('userRole') ?? 'Kasir';
   final userName = prefs.getString('userName') ?? 'Kasir';
+  final userId = prefs.getString('userId') ?? 'USR-DEFAULT-ADMIN';
 
   runApp(
     ProviderScope(
@@ -32,6 +33,7 @@ void main() async {
         isLoggedIn: isLoggedIn,
         userRole: userRole,
         userName: userName,
+        userId: userId,
       ),
     ),
   );
@@ -51,12 +53,14 @@ class ModernPOSApp extends ConsumerWidget {
   final bool isLoggedIn;
   final String userRole;
   final String userName;
+  final String userId;
   
   const ModernPOSApp({
     super.key,
     required this.isLoggedIn,
     required this.userRole,
     required this.userName,
+    required this.userId,
   });
 
   @override
@@ -68,7 +72,15 @@ class ModernPOSApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
       ),
-      home: isLoggedIn ? MainLayout(userRole: userRole, userName: userName) : const LoginScreen(),
+      home: isLoggedIn 
+          ? StreamBuilder<User>(
+              stream: (appDb.select(appDb.users)..where((u) => u.id.equals(userId))).watchSingle(),
+              builder: (context, snapshot) {
+                final liveName = snapshot.data?.name ?? userName;
+                return MainLayout(userRole: userRole, userName: liveName, userId: userId);
+              },
+            ) 
+          : const LoginScreen(),
     );
   }
 }

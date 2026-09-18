@@ -83,12 +83,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userRole', mappedRole);
         await prefs.setString('userName', authenticatedUser!.name);
+        await prefs.setString('userId', authenticatedUser!.id);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Selamat datang, ${authenticatedUser!.name}! ($mappedRole)')),
         );
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => MainLayout(userRole: mappedRole, userName: authenticatedUser!.name)),
+          MaterialPageRoute(builder: (context) => MainLayout(userRole: mappedRole, userName: authenticatedUser!.name, userId: authenticatedUser!.id)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -167,12 +168,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     await prefs.setBool('isLoggedIn', true);
                     await prefs.setString('userRole', mappedRole);
                     await prefs.setString('userName', authenticatedUser!.name);
+                    await prefs.setString('userId', authenticatedUser!.id);
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Selamat datang, ${authenticatedUser!.name}! ($mappedRole)')),
                     );
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => MainLayout(userRole: mappedRole, userName: authenticatedUser!.name)),
+                      MaterialPageRoute(builder: (context) => MainLayout(userRole: mappedRole, userName: authenticatedUser!.name, userId: authenticatedUser!.id)),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(

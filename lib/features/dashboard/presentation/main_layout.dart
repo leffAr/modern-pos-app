@@ -15,10 +15,12 @@ import '../../shifts/presentation/shifts_screen.dart';
 import '../../users/presentation/users_screen.dart';
 import '../../expenses/presentation/expense_screen.dart';
 import '../../inventory/presentation/stock_opname_screen.dart';
+
 class MainLayout extends StatefulWidget {
   final String userRole; // "Admin" or "Kasir"
   final String userName; // Nama pengguna yang login
-  const MainLayout({super.key, this.userRole = 'Admin', this.userName = 'Admin Utama'});
+  final String userId;
+  const MainLayout({super.key, this.userRole = 'Admin', this.userName = 'Admin Utama', this.userId = 'USR-DEFAULT-ADMIN'});
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
@@ -27,71 +29,75 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
 
-  late final List<Widget> _screens;
+  List<Widget> get _screens {
+    final screens = <Widget>[];
+    if (widget.userRole == 'Admin') {
+      screens.add(DashboardScreen(userRole: widget.userRole, userName: widget.userName));
+    }
+    if (widget.userRole == 'Kasir') {
+      screens.add(POSScreen(cashierName: widget.userName));
+    }
+    if (widget.userRole == 'Admin') {
+      screens.add(const ProductsScreen());
+      screens.add(const StockOpnameScreen());
+      screens.add(const CategoriesScreen());
+      screens.add(const PromosScreen());
+      screens.add(const PurchaseScreen());
+      screens.add(ExpenseScreen(userName: widget.userName));
+      screens.add(const ReportsScreen());
+    }
+    screens.add(ShiftsScreen(userRole: widget.userRole, userName: widget.userName));
+    screens.add(CustomersScreen(userRole: widget.userRole));
+    if (widget.userRole == 'Admin') {
+      screens.add(const UsersScreen());
+      screens.add(const StoreSettingsScreen());
+    }
+    screens.add(const PrinterSettingsScreen());
+    return screens;
+  }
+
   late final List<NavigationRailDestination> _navDestinations;
 
   @override
   void initState() {
     super.initState();
     
-    _screens = [];
     _navDestinations = [];
 
     // 1. Dashboard (Bisa diakses Admin saja)
     if (widget.userRole == 'Admin') {
-      _screens.add(DashboardScreen(userRole: widget.userRole, userName: widget.userName));
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: Text('Dashboard')));
     }
 
     // 2. POS / Kasir (HANYA KASIR)
     if (widget.userRole == 'Kasir') {
-      _screens.add(POSScreen(cashierName: widget.userName));
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.point_of_sale_outlined), selectedIcon: Icon(Icons.point_of_sale), label: Text('POS / Kasir')));
     }
 
     // 3. Menu khusus Admin (Produk, Kategori, Diskon/Promo, Pembelian, Laporan)
     if (widget.userRole == 'Admin') {
-      _screens.add(const ProductsScreen());
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: Text("Produk")));
-
-      _screens.add(const StockOpnameScreen());
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.fact_check_outlined), selectedIcon: Icon(Icons.fact_check), label: Text("Stok Opname")));
-
-      _screens.add(const CategoriesScreen());
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.category_outlined), selectedIcon: Icon(Icons.category), label: Text('Kategori')));
-
-      _screens.add(const PromosScreen());
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.local_offer_outlined), selectedIcon: Icon(Icons.local_offer), label: Text('Diskon / Promo')));
-
-      _screens.add(const PurchaseScreen());
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: Text('Pembelian')));
-      
-      _screens.add(ExpenseScreen(userName: widget.userName));
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.money_off_outlined), selectedIcon: Icon(Icons.money_off), label: Text('Pengeluaran')));
-
-      _screens.add(const ReportsScreen());
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart), label: Text('Laporan')));
     }
     
     // Shift (Bisa diakses Admin dan Kasir)
-    _screens.add(ShiftsScreen(userRole: widget.userRole, userName: widget.userName));
     _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.access_time_outlined), selectedIcon: Icon(Icons.access_time), label: Text('Shift')));
 
     // 4. Pelanggan (Bisa diakses Admin dan Kasir)
-    _screens.add(CustomersScreen(userRole: widget.userRole));
     _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: Text('Pelanggan')));
 
     // 5. Pengaturan Khusus Admin (Kelola Kasir, Profil Toko)
     if (widget.userRole == 'Admin') {
-      _screens.add(const UsersScreen());
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.badge_outlined), selectedIcon: Icon(Icons.badge), label: Text('Kelola Pengguna')));
-
-      _screens.add(const StoreSettingsScreen());
       _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: Text('Profil Toko')));
     }
 
     // 6. Printer (Bisa diakses Admin dan Kasir)
-    _screens.add(const PrinterSettingsScreen());
     _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.print_outlined), selectedIcon: Icon(Icons.print), label: Text('Printer')));
   }
 
