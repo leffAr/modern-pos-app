@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../core/database/database.dart';
 import '../../../core/utils/web_image_picker.dart';
+import '../../pos/data/receipt_printer_service.dart';
+
 
 class ProductsScreen extends StatefulWidget {
   final bool isReadOnly;
@@ -27,6 +29,36 @@ class _ProductsScreenState extends State<ProductsScreen> {
   void initState() {
     super.initState();
     _updateStream();
+  }
+
+  
+  Future<void> _printLabel(Product p) async {
+    final business = await (appDb.select(appDb.businessProfile)..limit(1)).getSingleOrNull();
+    if (business == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil toko belum diatur.')));
+      return;
+    }
+    await ReceiptPrinterService.printProductLabels(business: business, products: [p]);
+  }
+
+  Future<void> _printAllLabels() async {
+    final business = await (appDb.select(appDb.businessProfile)..limit(1)).getSingleOrNull();
+    if (business == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil toko belum diatur.')));
+      return;
+    }
+    
+    final query = appDb.select(appDb.products);
+    if (_selectedCategoryId != null) {
+      query.where((p) => p.categoryId.equals(_selectedCategoryId!));
+    }
+    final products = await query.get();
+    
+    if (products.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak ada produk untuk dicetak.')));
+      return;
+    }
+    await ReceiptPrinterService.printProductLabels(business: business, products: products);
   }
 
   void _updateStream() {
@@ -661,11 +693,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
         title: const Text("Data Produk"),
         actions: [
           if (!widget.isReadOnly)
-              IconButton(
-            icon: const Icon(Icons.file_upload),
-            tooltip: "Import Excel",
-            onPressed: _importExcel,
-          ),
+            IconButton(
+              icon: const Icon(Icons.print),
+              tooltip: "Cetak Semua Label",
+              onPressed: _printAllLabels,
+            ),
+          if (!widget.isReadOnly)
+            IconButton(
+              icon: const Icon(Icons.file_upload),
+              tooltip: "Import Excel",
+              onPressed: _importExcel,
+            ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
@@ -884,11 +922,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
                 trailing: widget.isReadOnly ? null : PopupMenuButton<String>(
                   onSelected: (val) {
-                    if (val == 'edit') _showAddEditDialog(p);
+                    if (val == 'print_label') _printLabel(p);
+                      if (val == 'edit') _showAddEditDialog(p);
                     if (val == 'delete') _deleteProduct(p);
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue), SizedBox(width: 8), Text('Edit')])),
+                    const PopupMenuItem(value: 'print_label', child: Row(children: [Icon(Icons.print, size: 18, color: Colors.indigo), SizedBox(width: 8), Text('Cetak Label')])), 
+                      const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue), SizedBox(width: 8), Text('Edit')])),
                     const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Hapus', style: TextStyle(color: Colors.red))])),
                   ],
                 ),

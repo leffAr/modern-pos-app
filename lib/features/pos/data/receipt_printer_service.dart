@@ -674,4 +674,55 @@ class ReceiptPrinterService {
     }
     return bytes;
   }
+
+  
+  static Future<void> printProductLabels({
+    required Business business,
+    required List<Product> products,
+  }) async {
+    final doc = pw.Document();
+    
+    // Label printer dimensions (standard label 50x30 mm)
+    final format = const PdfPageFormat(50 * PdfPageFormat.mm, 30 * PdfPageFormat.mm, marginAll: 2 * PdfPageFormat.mm);
+
+    for (final product in products) {
+      doc.addPage(
+        pw.Page(
+          pageFormat: format,
+          build: (pw.Context context) {
+            return pw.Center(
+              child: pw.Column(
+                mainAxisAlignment: pw.MainAxisAlignment.center,
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  pw.Text(business.name, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 1),
+                  pw.Text(product.name, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold), maxLines: 1),
+                  pw.Text('Rp ${_formatRupiah(product.sellingPrice)}', style: pw.TextStyle(fontSize: 9)),
+                  pw.SizedBox(height: 2),
+                  if (product.barcode != null && product.barcode!.isNotEmpty)
+                    pw.BarcodeWidget(
+                      barcode: pw.Barcode.code128(),
+                      data: product.barcode!,
+                      width: 40 * PdfPageFormat.mm,
+                      height: 10 * PdfPageFormat.mm,
+                      textStyle: const pw.TextStyle(fontSize: 7),
+                    )
+                  else if (product.sku != null && product.sku!.isNotEmpty)
+                    pw.BarcodeWidget(
+                      barcode: pw.Barcode.code128(),
+                      data: product.sku!,
+                      width: 40 * PdfPageFormat.mm,
+                      height: 10 * PdfPageFormat.mm,
+                      textStyle: const pw.TextStyle(fontSize: 7),
+                    )
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+    await Printing.layoutPdf(onLayout: (PdfPageFormat f) async => doc.save(), name: 'Label_Produk');
+  }
 }
