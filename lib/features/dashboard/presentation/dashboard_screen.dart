@@ -274,12 +274,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: [
-        _SummaryCard(title: 'Penjualan Hari Ini', value: 'Rp ${formatter.format(revenueToday.toInt())}', icon: Icons.attach_money, color: Colors.green),
-        _SummaryCard(title: 'Piutang Hari Ini', value: 'Rp ${formatter.format(piutangToday.toInt())}', icon: Icons.money_off, color: Colors.orange),
-        _SummaryCard(title: 'Pengeluaran Hari Ini', value: 'Rp ${formatter.format(expenseToday.toInt())}', icon: Icons.trending_down, color: Colors.red),
-        _SummaryCard(title: 'Laba Bersih Hari Ini', value: 'Rp ${formatter.format(netProfitToday.toInt())}', icon: Icons.savings, color: Colors.blue),
-        _SummaryCard(title: 'Total Pendapatan', value: 'Rp ${formatter.format(allTimeRev.toInt())}', icon: Icons.account_balance_wallet, color: Colors.purple),
-        _SummaryCard(title: 'Total Piutang', value: 'Rp ${formatter.format(allTimePiutang.toInt())}', icon: Icons.account_balance, color: Colors.orange.shade900),
+        _SummaryCard(title: 'Pendapatan', value: 'Rp ${formatter.format(revenue.toInt())}', icon: Icons.attach_money, color: Colors.green),
+        _SummaryCard(title: 'Piutang (Kasbon)', value: 'Rp ${formatter.format(piutang.toInt())}', icon: Icons.money_off, color: Colors.orange),
+        _SummaryCard(title: 'Pengeluaran', value: 'Rp ${formatter.format(expense.toInt())}', icon: Icons.trending_down, color: Colors.red),
+        _SummaryCard(title: 'Laba Bersih', value: 'Rp ${formatter.format(netProfit.toInt())}', icon: Icons.savings, color: Colors.blue),
       ],
     );
   }
