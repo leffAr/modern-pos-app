@@ -660,7 +660,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       appBar: AppBar(
         title: const Text("Data Produk"),
         actions: [
-          IconButton(
+          if (!widget.isReadOnly)
+              IconButton(
             icon: const Icon(Icons.file_upload),
             tooltip: "Import Excel",
             onPressed: _importExcel,
