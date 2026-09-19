@@ -33,7 +33,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   
   Future<void> _printLabel(Product p) async {
-    final business = await (appDb.select(appDb.businessProfile)..limit(1)).getSingleOrNull();
+    final business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
     if (business == null) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil toko belum diatur.')));
       return;
@@ -42,7 +42,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _printAllLabels() async {
-    final business = await (appDb.select(appDb.businessProfile)..limit(1)).getSingleOrNull();
+    final business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
     if (business == null) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil toko belum diatur.')));
       return;
