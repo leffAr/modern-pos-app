@@ -199,7 +199,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Halo, ',
+                  'Halo, ${widget.userName}',
                   style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Color(0xFF111827), letterSpacing: -1.0),
                 ),
               ),
