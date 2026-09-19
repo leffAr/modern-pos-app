@@ -158,23 +158,36 @@ class _SalesReportView extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           children: [
             // Summary Cards
-            Row(
-              children: [
-                Expanded(child: _InfoCard(title: 'Total Revenue', value: 'Rp ${formatter.format(totalRevenue.toInt())}', color: Colors.green)),
-                const SizedBox(width: 12),
-                Expanded(child: _InfoCard(title: 'Piutang (Kasbon)', value: 'Rp ${formatter.format(totalPiutang.toInt())}', color: Colors.orange)),
-                const SizedBox(width: 12),
-                Expanded(child: _InfoCard(title: 'Transaksi', value: '$totalTransactions', color: Colors.blue)),
-                const SizedBox(width: 12),
-                Expanded(child: _InfoCard(title: 'Rata-rata', value: 'Rp ${formatter.format(avgOrder.toInt())}', color: Colors.indigo)),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
+                return GridView.count(
+                  crossAxisCount: isMobile ? 1 : 4,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: isMobile ? 2.5 : 1.5,
+                  children: [
+                    _InfoCard(title: 'Total Revenue', value: 'Rp ${formatter.format(totalRevenue.toInt())}', color: Colors.green),
+                    _InfoCard(title: 'Piutang (Kasbon)', value: 'Rp ${formatter.format(totalPiutang.toInt())}', color: Colors.orange),
+                    _InfoCard(title: 'Transaksi', value: '${totalTransactions}', color: Colors.blue),
+                    _InfoCard(title: 'Rata-rata', value: 'Rp ${formatter.format(avgOrder.toInt())}', color: Colors.indigo),
+                  ],
+                );
+              }
             ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
               children: [
                 Text('Histori Transaksi', style: Theme.of(context).textTheme.titleLarge),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     OutlinedButton.icon(
                       icon: const Icon(Icons.people),
@@ -658,8 +671,11 @@ class _ProductReportView extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
               children: [
                 Text('Produk Terlaris', style: Theme.of(context).textTheme.titleLarge),
                 FilledButton.tonalIcon(
