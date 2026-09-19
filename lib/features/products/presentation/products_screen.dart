@@ -33,20 +33,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   
   Future<void> _printLabel(Product p) async {
-    final business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
-    if (business == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil toko belum diatur.')));
-      return;
-    }
+    var business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
+    business ??= const Business(id: 'B-1', name: 'Toko Saya', address: '', phone: '', taxPercentage: 0, enableTableNumber: false, enableQueueNumber: false);
     await ReceiptPrinterService.printProductLabels(business: business, products: [p]);
   }
 
   Future<void> _printAllLabels() async {
-    final business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
-    if (business == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil toko belum diatur.')));
-      return;
-    }
+    var business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull();
+    business ??= const Business(id: 'B-1', name: 'Toko Saya', address: '', phone: '', taxPercentage: 0, enableTableNumber: false, enableQueueNumber: false);
     
     final query = appDb.select(appDb.products);
     if (_selectedCategoryId != null) {
