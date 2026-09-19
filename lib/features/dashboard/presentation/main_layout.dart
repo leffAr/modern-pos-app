@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/database/database.dart';
+import 'package:drift/drift.dart' as drift;
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
 import '../../products/presentation/products_screen.dart';
@@ -206,7 +209,44 @@ class _MainLayoutState extends State<MainLayout> {
             ),
           if (!isMobile) const VerticalDivider(thickness: 1, width: 1),
           Expanded(
-            child: _screens[_selectedIndex],
+            child: widget.userRole == 'Kasir' 
+              ? StreamBuilder<List<Shift>>(
+                  stream: (appDb.select(appDb.shifts)..where((s) => s.userId.equals(widget.userId) & s.status.equals('OPEN'))).watch(),
+                  builder: (context, snapshot) {
+                    final currentScreen = _screens[_selectedIndex];
+                    final isShiftScreen = currentScreen is ShiftsScreen;
+                    final isPrinterScreen = currentScreen is PrinterSettingsScreen;
+                    final hasActiveShift = snapshot.hasData && snapshot.data!.isNotEmpty;
+
+                    if (!hasActiveShift && !isShiftScreen && !isPrinterScreen) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.lock_clock, size: 80, color: Colors.grey),
+                            const SizedBox(height: 16),
+                            const Text('Shift Belum Dibuka', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            const Text('Anda harus membuka shift terlebih dahulu\nuntuk menggunakan fitur ini.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                            const SizedBox(height: 24),
+                            FilledButton.icon(
+                              icon: const Icon(Icons.access_time),
+                              label: const Text('Buka Shift Sekarang'),
+                              onPressed: () {
+                                final shiftIndex = _screens.indexWhere((s) => s is ShiftsScreen);
+                                if (shiftIndex != -1) {
+                                  setState(() => _selectedIndex = shiftIndex);
+                                }
+                              },
+                            )
+                          ],
+                        ),
+                      );
+                    }
+                    return currentScreen;
+                  }
+                )
+              : _screens[_selectedIndex],
           ),
         ],
       ),
