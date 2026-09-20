@@ -901,6 +901,17 @@ class _POSScreenState extends State<POSScreen> {
                               ),
                             ],
                             if (isMobile) ...[
+                              const SizedBox(width: 8),
+                              IconButton(
+                                onPressed: _showDailyReport,
+                                icon: const Icon(Icons.receipt_long, size: 22),
+                                tooltip: 'Laporan Shift',
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.grey.shade700,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                                ),
+                              ),
                               const SizedBox(width: 4),
                               Builder(
                                 builder: (context) {
