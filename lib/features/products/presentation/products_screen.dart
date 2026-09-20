@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import '../../../core/utils/image_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:file_picker/file_picker.dart';
@@ -165,7 +166,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
                                 child: Image.memory(
-                                  base64Decode(currentImageBase64!),
+                                  ImageHelper.decodeBase64(currentImageBase64!)!,
                                   fit: BoxFit.cover,
                                 ),
                               )
@@ -824,9 +825,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: p.imageBase64 != null
+                    child: (p.imageBase64 != null && ImageHelper.decodeBase64(p.imageBase64) != null)
                         ? Image.memory(
-                            base64Decode(p.imageBase64!),
+                            ImageHelper.decodeBase64(p.imageBase64)!,
                             fit: BoxFit.cover,
                           )
                         : Center(
@@ -997,7 +998,7 @@ class _ProductSearchDelegate extends SearchDelegate<String> {
                   borderRadius: BorderRadius.circular(8),
                   child: p.imageBase64 != null
                       ? Image.memory(
-                          base64Decode(p.imageBase64!),
+                          ImageHelper.decodeBase64(p.imageBase64!)!,
                           fit: BoxFit.cover,
                         )
                       : Center(

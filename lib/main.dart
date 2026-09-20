@@ -12,13 +12,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
   
-  // Migrate old buggy data from "Admin Utama" to "U-1"
-  await (appDb.update(appDb.transactions)..where((t) => t.userId.equals('Admin Utama'))).write(
-    const TransactionsCompanion(userId: drift.Value('U-1'))
-  );
-  await (appDb.update(appDb.shifts)..where((s) => s.userId.equals('Admin Utama'))).write(
-    const ShiftsCompanion(userId: drift.Value('U-1'))
-  );
+  // Migrate old buggy data without blocking UI
+  Future.microtask(() async {
+    try {
+      await (appDb.update(appDb.transactions)..where((t) => t.userId.equals('Admin Utama'))).write(
+        const TransactionsCompanion(userId: drift.Value('U-1'))
+      );
+      await (appDb.update(appDb.shifts)..where((s) => s.userId.equals('Admin Utama'))).write(
+        const ShiftsCompanion(userId: drift.Value('U-1'))
+      );
+    } catch (e) {
+      print("Migration error: $e");
+    }
+  });
 
   final prefs = await SharedPreferences.getInstance();
   final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;

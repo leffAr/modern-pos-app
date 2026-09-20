@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../../../core/utils/image_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -1335,7 +1336,7 @@ class _ProductCard extends StatelessWidget {
                     color: Colors.grey.shade200,
                     child: imageBase64 != null
                         ? Image.memory(
-                            base64Decode(imageBase64!),
+                            ImageHelper.decodeBase64(imageBase64!)!,
                             fit: BoxFit.cover,
                           )
                         : const Icon(Icons.image, size: 40, color: Colors.grey),
