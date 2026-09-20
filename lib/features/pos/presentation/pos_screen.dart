@@ -777,7 +777,7 @@ class _POSScreenState extends State<POSScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    final isMobile = MediaQuery.of(context).size.width < 900 || MediaQuery.of(context).size.height < 600;
 
     return KeyboardListener(
       focusNode: _scannerFocusNode,
@@ -1107,10 +1107,13 @@ class _POSScreenState extends State<POSScreen> {
                 ),
         ),
         const Divider(height: 1),
-        Container(
-          padding: const EdgeInsets.all(16),
-          color: Colors.white,
-          child: Column(
+        Flexible(
+          flex: 0,
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Column(
             children: [
               StreamBuilder<List<Customer>>(
                 stream: _customersStream,
@@ -1287,6 +1290,8 @@ class _POSScreenState extends State<POSScreen> {
               ),
             ],
           ),
+        ),
+        ),
         ),
       ],
     );
