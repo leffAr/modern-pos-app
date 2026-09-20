@@ -805,8 +805,7 @@ class _POSScreenState extends State<POSScreen> {
                   const SizedBox(height: 16),
                   const Text('Shift Belum Dibuka', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  const Text('Anda harus membuka shift dan memasukkan
-modal kas awal sebelum bisa bertransaksi.', textAlign: TextAlign.center),
+                  const Text('Anda harus membuka shift dan memasukkan\nmodal kas awal sebelum bisa bertransaksi.', textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -1835,3 +1834,4 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
     );
   }
 }
+
