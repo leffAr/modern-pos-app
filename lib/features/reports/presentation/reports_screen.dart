@@ -5,7 +5,8 @@ import '../data/export_service.dart';
 import 'package:intl/intl.dart';
 
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({super.key});
+  final bool isCashier;
+  const ReportsScreen({super.key, this.isCashier = false});
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
