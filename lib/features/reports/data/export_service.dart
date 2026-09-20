@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
 
 class ExportService {
   /// Generate and preview PDF Report
@@ -114,6 +115,13 @@ class ExportService {
           mimeType: MimeType.microsoftExcel,
         );
         
+        if (path.isNotEmpty) {
+          try {
+            await OpenFilex.open(path);
+          } catch (e) {
+            print("Could not open file: $e");
+          }
+        }
         return path;
       }
     } catch (e) {

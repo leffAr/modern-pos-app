@@ -12,7 +12,10 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  DateTimeRange? _selectedDateRange;
+  DateTimeRange? _selectedDateRange = DateTimeRange(
+    start: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day),
+    end: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 23, 59, 59),
+  );
 
   void _pickDateRange() async {
     final picked = await showDateRangePicker(
