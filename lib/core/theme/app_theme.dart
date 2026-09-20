@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Primary color: Indigo / Royal Blue
-  static const Color primaryColor = Color(0xFF4F46E5); // Indigo 600
+  static const Color primaryColor = Color(0xFF007AFF); // Vibrant Blue
   static const Color secondaryColor = Color(0xFF10B981); // Emerald 500
   static const Color backgroundColor = Color(0xFFF9FAFB); // Gray 50
   static const Color surfaceColor = Colors.white;
