@@ -419,7 +419,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
                           ? const Center(child: CircularProgressIndicator())
                           : _logoBase64 != null
                           ? Image.memory(base64Decode(_logoBase64!), fit: BoxFit.contain, filterQuality: FilterQuality.high)
-                          : Image.asset('assets/images/logo_transparent.png', fit: BoxFit.contain, filterQuality: FilterQuality.high),
+                          : Image.asset('assets/images/logo_new.jpg', fit: BoxFit.contain, filterQuality: FilterQuality.high),
                     ),
                   ),
                   Positioned(

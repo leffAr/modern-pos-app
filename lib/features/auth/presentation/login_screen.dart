@@ -239,7 +239,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       filterQuality: FilterQuality.high,
                                     )
                                   : Image.asset(
-                                      'assets/images/logo_transparent.png',
+                                      'assets/images/logo_new.jpg',
                                       width: 100,
                                       height: 100,
                                       fit: BoxFit.cover,
