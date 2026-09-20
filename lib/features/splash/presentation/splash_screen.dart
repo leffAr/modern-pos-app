@@ -102,6 +102,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     child: Image.asset(
                       'assets/images/logo_v3.png',
                       fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront, size: 60, color: Colors.blue),
                     ),
                   ),
                 ],
