@@ -279,12 +279,12 @@ class _MainLayoutState extends State<MainLayout> {
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               left: _isSidebarOpen ? 90 : 0,
-              top: 16,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: const BorderRadius.only(
+              bottom: 32,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(12),
                     bottomRight: Radius.circular(12),
                   ),
