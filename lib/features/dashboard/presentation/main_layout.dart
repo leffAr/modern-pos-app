@@ -31,6 +31,7 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
+  bool _isSidebarOpen = true;
 
   List<Widget> get _screens {
     final screens = <Widget>[];
@@ -166,49 +167,15 @@ class _MainLayoutState extends State<MainLayout> {
               ),
             )
           : null,
-      body: Row(
+            body: Stack(
         children: [
-          if (!isMobile)
-            LayoutBuilder(
-              builder: (context, constraint) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraint.maxHeight),
-                    child: IntrinsicHeight(
-                      child: NavigationRail(
-                        selectedIndex: _selectedIndex,
-                        onDestinationSelected: _onDestinationSelected,
-                        labelType: NavigationRailLabelType.all,
-                        destinations: _navDestinations,
-                        trailing: Expanded(
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 16.0),
-                              child: IconButton(
-                                icon: const Icon(Icons.logout, color: Colors.red),
-                                tooltip: 'Logout',
-                                onPressed: () async {
-                                  final prefs = await SharedPreferences.getInstance();
-                                  await prefs.clear();
-                                  if (context.mounted) {
-                                    Navigator.of(context).pushReplacement(
-                                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          if (!isMobile) const VerticalDivider(thickness: 1, width: 1),
-          Expanded(
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            left: isMobile ? 0 : (_isSidebarOpen ? 90 : 0),
+            right: 0,
+            top: 0,
+            bottom: 0,
             child: widget.userRole == 'Kasir' 
               ? StreamBuilder<List<Shift>>(
                   stream: (appDb.select(appDb.shifts)..where((s) => s.userId.equals(widget.userId) & s.status.equals('OPEN'))).watch(),
@@ -247,7 +214,90 @@ class _MainLayoutState extends State<MainLayout> {
                   }
                 )
               : _screens[_selectedIndex],
-          ),
+          ), 
+          
+          if (!isMobile)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              left: _isSidebarOpen ? 0 : -90,
+              top: 0,
+              bottom: 0,
+              width: 90,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border(right: BorderSide(color: Colors.grey.shade300, width: 1)),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraint) {
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraint.maxHeight),
+                        child: IntrinsicHeight(
+                          child: NavigationRail(
+                            selectedIndex: _selectedIndex,
+                            onDestinationSelected: _onDestinationSelected,
+                            labelType: NavigationRailLabelType.all,
+                            destinations: _navDestinations,
+                            trailing: Expanded(
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 16.0),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.logout, color: Colors.red),
+                                    tooltip: 'Logout',
+                                    onPressed: () async {
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.clear();
+                                      if (context.mounted) {
+                                        Navigator.of(context).pushReplacement(
+                                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          if (!isMobile)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              left: _isSidebarOpen ? 90 : 0,
+              top: 16,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(2, 0))
+                  ],
+                ),
+                child: IconButton(
+                  icon: Icon(_isSidebarOpen ? Icons.chevron_left : Icons.chevron_right, color: Colors.blueGrey),
+                  tooltip: _isSidebarOpen ? 'Sembunyikan Menu' : 'Tampilkan Menu',
+                  onPressed: () {
+                    setState(() {
+                      _isSidebarOpen = !_isSidebarOpen;
+                    });
+                  },
+                ),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: isMobile
