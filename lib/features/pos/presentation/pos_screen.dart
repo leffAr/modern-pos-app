@@ -1039,8 +1039,8 @@ modal kas awal sebelum bisa bertransaksi.', textAlign: TextAlign.center),
                       
                       return _ProductCard(
                         name: p.name,
-                        price: p.basePrice,
-                        hasVariants: p.hasVariants,
+                        price: p.sellingPrice,
+                        hasVariants: false,
                         imageBase64: p.imageBase64,
                         stock: stock,
                         unit: p.unit,
