@@ -31,7 +31,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _navigateToNext() async {
     // Simulasi loading selama 2.5 detik agar animasi terlihat
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 2000));
 
     if (!mounted) return;
 
