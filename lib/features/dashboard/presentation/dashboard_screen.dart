@@ -187,9 +187,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildWelcomeHeader(BuildContext context, double revenue) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 56, 24, 24),
+      padding: EdgeInsets.fromLTRB(isMobile ? 16 : 24, isMobile ? 24 : 56, isMobile ? 16 : 24, 24),
       color: Colors.transparent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +201,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Expanded(
                 child: Text(
                   'Halo, ${widget.userName}',
-                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Color(0xFF111827), letterSpacing: -1.0),
+                  style: TextStyle(fontSize: isMobile ? 22 : 32, fontWeight: FontWeight.w800, color: const Color(0xFF111827), letterSpacing: -1.0),
                 ),
               ),
               Row(
@@ -456,7 +457,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
       ),
       clipBehavior: Clip.antiAlias,
-      child: DataTable(
+      child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
         headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
         columns: const [
           DataColumn(label: Text('Nama Kasir', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -475,6 +478,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             DataCell(Text('Rp ${formatter.format(piutang.toInt())}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange))),
           ]);
         }).toList(),
+      ),
       ),
     );
   }

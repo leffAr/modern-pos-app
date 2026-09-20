@@ -329,10 +329,15 @@ class _MainLayoutState extends State<MainLayout> {
                         icon: Icon(Icons.inventory_2, color: _selectedIndex == 1 ? Colors.blue : Colors.grey),
                         onPressed: () => _onDestinationSelected(1),
                       ),
+                      IconButton(
+                        tooltip: 'Laporan',
+                        icon: Icon(Icons.bar_chart, color: _selectedIndex == 8 ? Colors.blue : Colors.grey),
+                        onPressed: () => _onDestinationSelected(8),
+                      ),
                     ],
                     if (widget.userRole == 'Kasir') ...[
                       IconButton(
-                        tooltip: 'POS Kasir',
+                        tooltip: 'Kasir',
                         icon: Icon(Icons.point_of_sale, color: _selectedIndex == 0 ? Colors.blue : Colors.grey),
                         onPressed: () => _onDestinationSelected(0),
                       ),
@@ -345,6 +350,11 @@ class _MainLayoutState extends State<MainLayout> {
                         tooltip: 'Shift',
                         icon: Icon(Icons.access_time, color: _selectedIndex == 2 ? Colors.blue : Colors.grey),
                         onPressed: () => _onDestinationSelected(2),
+                      ),
+                      IconButton(
+                        tooltip: 'Pelanggan',
+                        icon: Icon(Icons.people, color: _selectedIndex == 3 ? Colors.blue : Colors.grey),
+                        onPressed: () => _onDestinationSelected(3),
                       ),
                     ],
                   ],

@@ -819,14 +819,14 @@ class _POSScreenState extends State<POSScreen> {
                 Expanded(
                   child: Column(
                     children: [
-                      // Top Bar (Mirip desain Azure)
+                      // Top Bar - Responsive
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                        padding: EdgeInsets.fromLTRB(isMobile ? 12 : 24, isMobile ? 12 : 24, isMobile ? 12 : 24, isMobile ? 8 : 16),
                         child: Row(
                           children: [
                             Expanded(
                               child: Container(
-                                height: 48,
+                                height: 44,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
@@ -834,14 +834,14 @@ class _POSScreenState extends State<POSScreen> {
                                 ),
                                 child: TextField(
                                   controller: _searchController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Search menu here...',
-                                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                                    prefixIcon: Icon(Icons.search, color: Colors.grey),
+                                  decoration: InputDecoration(
+                                    hintText: isMobile ? 'Cari...' : 'Search menu here...',
+                                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
                                     focusedBorder: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(vertical: 14),
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                                   ),
                                   onChanged: (val) {
                                     setState(() {
@@ -851,59 +851,57 @@ class _POSScreenState extends State<POSScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            OutlinedButton.icon(
+                            const SizedBox(width: 8),
+                            IconButton(
                               onPressed: _scanBarcode,
-                              icon: const Icon(Icons.qr_code_scanner, size: 20),
-                              label: const Text('Scan'),
-                              style: OutlinedButton.styleFrom(
+                              icon: const Icon(Icons.qr_code_scanner, size: 22),
+                              tooltip: 'Scan Barcode',
+                              style: IconButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.grey.shade700,
-                                side: BorderSide(color: Colors.grey.shade200),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
                               ),
                             ),
-                            const Spacer(),
-                            OutlinedButton.icon(
-                              onPressed: _showDailyReport,
-                              icon: const Icon(Icons.receipt_long, size: 20),
-                              label: const Text('Report'),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.grey.shade700,
-                                side: BorderSide(color: Colors.grey.shade200),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            if (!isMobile) ...[
+                              const SizedBox(width: 8),
+                              OutlinedButton.icon(
+                                onPressed: _showDailyReport,
+                                icon: const Icon(Icons.receipt_long, size: 20),
+                                label: const Text('Report'),
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.grey.shade700,
+                                  side: BorderSide(color: Colors.grey.shade200),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            // Profile
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  child: Text(
-                                    widget.cashierName.isNotEmpty ? widget.cashierName[0].toUpperCase() : 'U',
-                                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+                              const Spacer(),
+                              // Profile
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    child: Text(
+                                      widget.cashierName.isNotEmpty ? widget.cashierName[0].toUpperCase() : 'U',
+                                      style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(widget.cashierName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
-                                    const Text('Cashier', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                  ],
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 16),
-                              ],
-                            ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(widget.cashierName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+                                      const Text('Cashier', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
                             if (isMobile) ...[
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 4),
                               Builder(
                                 builder: (context) {
                                   return IconButton(
@@ -932,7 +930,7 @@ class _POSScreenState extends State<POSScreen> {
                             final categories = snapshot.data ?? [];
                             return ListView(
                               scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
                               children: [
                                 _buildCategoryChip(null, 'All Menu'),
                                 ...categories.map((c) => _buildCategoryChip(c.id, c.name)),
@@ -1011,15 +1009,16 @@ class _POSScreenState extends State<POSScreen> {
             final inventoryMap = {for (var item in inventory) item.productId: item.stock};
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width < 600 ? 12 : 24),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   int crossAxisCount = constraints.maxWidth < 600 ? 2 : constraints.maxWidth < 900 ? 3 : 4;
+                  double aspectRatio = constraints.maxWidth < 600 ? 0.65 : 0.8;
                   return GridView.builder(
                     padding: const EdgeInsets.only(bottom: 24),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
-                      childAspectRatio: 0.8,
+                      childAspectRatio: aspectRatio,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                     ),
