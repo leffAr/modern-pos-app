@@ -92,74 +92,90 @@ class _UsersScreenState extends State<UsersScreen> {
                 TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
                 FilledButton(
                   onPressed: () async {
-                    final nameText = nameController.text.trim();
-                    final emailText = emailController.text.trim();
-                    final passText = passwordController.text.trim();
-                    
-                    if (nameText.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nama Lengkap tidak boleh kosong')));
-                      return;
-                    }
-                    if (emailText.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email / Username tidak boleh kosong')));
-                      return;
-                    }
-                    if (!isEditing && passText.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password harus diisi untuk pengguna baru')));
-                      return;
-                    }
-
-                    String _hashString(String input) {
-                      final bytes = utf8.encode(input);
-                      final digest = sha256.convert(bytes);
-                      return digest.toString();
-                    }
-
-                    final pinText = pinController.text.trim();
-                    
-                    String finalPassword = user?.password ?? '';
-                    if (passText.isNotEmpty) {
-                      finalPassword = _hashString(passText);
-                    }
-                    String finalPin = user?.pin ?? '';
-                    if (pinText.isNotEmpty) {
-                      finalPin = _hashString(pinText);
+                    try {
+                      final nameText = nameController.text.trim();
+                      final emailText = emailController.text.trim();
+                      final passText = passwordController.text.trim();
                       
-                      // Validasi PIN unik
-                      final existingUserWithPin = await (appDb.select(appDb.users)
-                        ..where((u) => u.pin.equals(finalPin)))
-                        .getSingleOrNull();
+                      if (nameText.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nama Lengkap tidak boleh kosong')));
+                        return;
+                      }
+                      if (emailText.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email / Username tidak boleh kosong')));
+                        return;
+                      }
+                      if (!isEditing && passText.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password harus diisi untuk pengguna baru')));
+                        return;
+                      }
+
+                      String _hashString(String input) {
+                        final bytes = utf8.encode(input);
+                        final digest = sha256.convert(bytes);
+                        return digest.toString();
+                      }
+
+                      final pinText = pinController.text.trim();
+                      
+                      String finalPassword = user?.password ?? '';
+                      if (passText.isNotEmpty) {
+                        finalPassword = _hashString(passText);
+                      }
+                      String finalPin = user?.pin ?? '';
+                      if (pinText.isNotEmpty) {
+                        finalPin = _hashString(pinText);
                         
-                      if (existingUserWithPin != null && (!isEditing || existingUserWithPin.id != user!.id)) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Error: Kode PIN ini sudah digunakan oleh akun lain. Harap gunakan PIN yang berbeda!'),
-                              backgroundColor: Colors.red,
-                            )
-                          );
+                        // Validasi PIN unik
+                        final existingUsersWithPin = await (appDb.select(appDb.users)
+                          ..where((u) => u.pin.equals(finalPin)))
+                          .get();
+                          
+                        if (existingUsersWithPin.isNotEmpty) {
+                          final existingUserWithPin = existingUsersWithPin.first;
+                          if (!isEditing || existingUserWithPin.id != user!.id) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Error: Kode PIN ini sudah digunakan oleh akun lain. Harap gunakan PIN yang berbeda!'),
+                                  backgroundColor: Colors.red,
+                                )
+                              );
+                            }
+                            return; // Berhenti dan jangan simpan
+                          }
                         }
-                        return; // Berhenti dan jangan simpan
+                      }
+
+                      final companion = UsersCompanion(
+                        id: isEditing ? drift.Value(user!.id) : drift.Value('USR-${DateTime.now().millisecondsSinceEpoch}'),
+                        name: drift.Value(nameController.text.trim()),
+                        email: drift.Value(emailController.text.trim()),
+                        phone: drift.Value(phoneController.text.trim()),
+                        password: drift.Value(finalPassword),
+                        pin: drift.Value(finalPin),
+                        roleId: drift.Value(selectedRole),
+                      );
+
+                      if (isEditing) {
+                        await (appDb.update(appDb.users)..where((t) => t.id.equals(user!.id))).write(companion);
+                      } else {
+                        await appDb.into(appDb.users).insert(companion);
+                      }
+
+                      if (context.mounted) Navigator.pop(context);
+                    } catch (e) {
+                      print("Error saving user: $e");
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Gagal menyimpan pengguna: $e'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 4),
+                          )
+                        );
                       }
                     }
-
-                    final companion = UsersCompanion(
-                      id: isEditing ? drift.Value(user!.id) : drift.Value('USR-${DateTime.now().millisecondsSinceEpoch}'),
-                      name: drift.Value(nameController.text.trim()),
-                      email: drift.Value(emailController.text.trim()),
-                      phone: drift.Value(phoneController.text.trim()),
-                      password: drift.Value(finalPassword),
-                      pin: drift.Value(finalPin),
-                      roleId: drift.Value(selectedRole),
-                    );
-
-                    if (isEditing) {
-                      await (appDb.update(appDb.users)..where((t) => t.id.equals(user!.id))).write(companion);
-                    } else {
-                      await appDb.into(appDb.users).insert(companion);
-                    }
-
-                    if (context.mounted) Navigator.pop(context);
                   },
                   child: const Text('Simpan'),
                 ),
