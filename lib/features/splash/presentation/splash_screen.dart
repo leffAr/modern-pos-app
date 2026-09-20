@@ -99,10 +99,12 @@ class _SplashScreenState extends State<SplashScreen> {
                       ],
                     ),
                     padding: const EdgeInsets.all(6), // Margin putih sangat tipis seperti di gambar
-                    child: Image.asset(
-                      'assets/images/logo_v3.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront, size: 60, color: Colors.blue),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/logo_v3.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront, size: 60, color: Colors.blue),
+                      ),
                     ),
                   ),
                 ],
