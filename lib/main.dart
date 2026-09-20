@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,10 +74,7 @@ class ModernPOSApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Modern POS',
       scrollBehavior: MyCustomScrollBehavior(),
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
       home: SplashScreen(
         isLoggedIn: isLoggedIn,
         userRole: userRole,

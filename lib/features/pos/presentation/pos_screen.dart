@@ -1322,55 +1322,78 @@ class _ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       clipBehavior: Clip.antiAlias,
-      elevation: 2,
       child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
+              flex: 5,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   Container(
-                    color: Colors.grey.shade200,
-                    child: imageBase64 != null
+                    color: Colors.grey.shade100,
+                    child: (imageBase64 != null && ImageHelper.decodeBase64(imageBase64) != null)
                         ? Image.memory(
-                            ImageHelper.decodeBase64(imageBase64!)!,
+                            ImageHelper.decodeBase64(imageBase64)!,
                             fit: BoxFit.cover,
                           )
-                        : const Icon(Icons.image, size: 40, color: Colors.grey),
+                        : Icon(Icons.inventory_2_outlined, size: 40, color: Colors.grey.shade300),
                   ),
                   Positioned(
                     top: 8,
                     right: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: stock > 0 ? Colors.green.withOpacity(0.8) : Colors.red.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(12),
+                        color: stock > 0 ? Theme.of(context).colorScheme.primary.withOpacity(0.9) : Colors.red.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '$stock $unit',
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        stock > 0 ? '$stock $unit' : 'Habis',
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  if (hasVariants)
-                    const Text('Pilih Varian', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold))
-                  else
-                    Text('Rp $price', style: const TextStyle(color: Colors.blueAccent)),
-                ],
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      name, 
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, height: 1.2), 
+                      maxLines: 2, 
+                      overflow: TextOverflow.ellipsis
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Rp ${NumberFormat("#,###", "id_ID").format(price)}', 
+                          style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 13)
+                        ),
+                        if (hasVariants)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text('Varian', style: TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold)),
+                          )
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

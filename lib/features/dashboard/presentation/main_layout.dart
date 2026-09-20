@@ -239,6 +239,11 @@ class _MainLayoutState extends State<MainLayout> {
                             selectedIndex: _selectedIndex,
                             onDestinationSelected: _onDestinationSelected,
                             labelType: NavigationRailLabelType.all,
+                            backgroundColor: Theme.of(context).colorScheme.surface,
+                            indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            selectedIconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+                            selectedLabelTextStyle: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 11),
+                            unselectedLabelTextStyle: const TextStyle(color: Colors.grey, fontSize: 11),
                             destinations: _navDestinations,
                             trailing: Expanded(
                               child: Align(

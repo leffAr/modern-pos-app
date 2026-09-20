@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/image_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -205,102 +206,114 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                StreamBuilder<Business?>(
-                  stream: (appDb.select(appDb.businesses)..limit(1)).watchSingleOrNull(),
-                  builder: (context, snapshot) {
-                    final business = snapshot.data;
-                    final logoBase64 = business?.logoBase64;
-                    
-                    return Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: logoBase64 != null
-                              ? Image.memory(
-                                  base64Decode(logoBase64),
-                                  width: 150,
-                                  height: 150,
-                                  fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.high,
-                                )
-                              : Image.asset(
-                                  'assets/images/logo_transparent.png',
-                                  width: 150,
-                                  height: 150,
-                                  fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.high,
-                                ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          business?.name ?? 'Modern POS',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Masuk ke akun bisnis Anda',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 32),
-                
-
-
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email / Username',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Card(
+              elevation: 4, // More pronounced floating effect
+              shadowColor: Colors.black.withOpacity(0.1),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    StreamBuilder<Business?>(
+                      stream: (appDb.select(appDb.businesses)..limit(1)).watchSingleOrNull(),
+                      builder: (context, snapshot) {
+                        final business = snapshot.data;
+                        final logoBase64 = business?.logoBase64;
+                        final decodedLogo = logoBase64 != null ? ImageHelper.decodeBase64(logoBase64) : null;
+                        
+                        return Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                shape: BoxShape.circle,
+                              ),
+                              child: ClipOval(
+                                child: decodedLogo != null
+                                    ? Image.memory(
+                                        decodedLogo,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        filterQuality: FilterQuality.high,
+                                      )
+                                    : Image.asset(
+                                        'assets/images/logo_transparent.png',
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        filterQuality: FilterQuality.high,
+                                        errorBuilder: (context, error, stackTrace) => 
+                                           const Icon(Icons.storefront, size: 80, color: Colors.blue),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              business?.name ?? 'Modern POS',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Masuk ke akun bisnis Anda',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 40),
+                    
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email / Username',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: !_isPasswordVisible,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    FilledButton(
+                      onPressed: _handleLogin,
+                      child: const Text('MASUK'),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _showPinLoginDialog,
+                      icon: const Icon(Icons.pin),
+                      label: const Text('Login dengan PIN'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _handleLogin,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text('MASUK'),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: _showPinLoginDialog,
-                  child: const Text('Login dengan PIN'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
