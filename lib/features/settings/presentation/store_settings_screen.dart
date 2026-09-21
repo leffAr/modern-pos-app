@@ -142,22 +142,45 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   Future<void> _resetTransactionData() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Riwayat Transaksi?'),
-        content: const Text(
-            'Tindakan ini akan menghapus PERMANEN seluruh riwayat Penjualan, Pembayaran, dan Shift Kasir hari ini dan sebelumnya.\n\nData Produk dan Pengaturan Toko TIDAK akan dihapus. Anda yakin?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal')),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.delete_forever),
-            label: const Text('Ya, Hapus Semua'),
-          ),
-        ],
-      ),
+      builder: (context) {
+        String inputStr = "";
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Hapus Riwayat Transaksi?'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Tindakan ini akan menghapus PERMANEN seluruh riwayat Penjualan, Pembayaran, dan Shift Kasir hari ini dan sebelumnya.\n\nData Produk dan Pengaturan Toko TIDAK akan dihapus.'),
+                  const SizedBox(height: 16),
+                  const Text('Untuk mengonfirmasi, ketik "HAPUS" di bawah ini:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    onChanged: (val) => setState(() => inputStr = val),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'HAPUS',
+                      isDense: true,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Batal')),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: inputStr.trim().toUpperCase() == "HAPUS" ? () => Navigator.pop(context, true) : null,
+                  icon: const Icon(Icons.delete_forever),
+                  label: const Text('Ya, Hapus Semua'),
+                ),
+              ],
+            );
+          }
+        );
+      }
     );
 
     if (confirm == true) {
