@@ -433,6 +433,7 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
         ],
       ),
     );
+  }
 
   void _showAdminWhatsAppDialog(Business business, String shiftName, String cashierName, double expected, double actual, double selisih) {
     showDialog(
