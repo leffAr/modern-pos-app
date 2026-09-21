@@ -36,7 +36,7 @@ dependencies:
   flutter_native_splash: ^2.4.4
   open_filex: ^4.7.0
   google_fonts: ^6.3.0
-  flutter_beep: ^1.0.0
+  audioplayers: ^6.4.0
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +62,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/logo_v3.png
+    - assets/audio/
 
 flutter_native_splash:
   color: "#FFFFFF"

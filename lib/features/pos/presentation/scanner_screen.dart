@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:flutter_beep/flutter_beep.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -75,7 +75,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     if (barcodes.isNotEmpty) {
                       final String code = barcodes.first.rawValue ?? '';
                       if (code.isNotEmpty) {
-                        FlutterBeep.beep();
+                        AudioPlayer().play(AssetSource('audio/beep.wav'));
                         _hasPopped = true;
                         Navigator.pop(context, code);
                       }
