@@ -607,14 +607,7 @@ class _POSScreenState extends State<POSScreen> {
               }
               
               final formatter = NumberFormat('#,###', 'id_ID');
-              final message = 'Halo *' + customerName + '*,
-
-Terima kasih telah berbelanja di *' + storeName + '*!
-
-Nomor Struk: ' + txId + '
-Total Belanja: Rp ' + formatter.format(total) + '
-
-Simpan pesan ini sebagai struk digital Anda.';
+              final message = 'Halo *${customerName}*,\n\nTerima kasih telah berbelanja di *${storeName}*!\n\nNomor Struk: ${txId}\nTotal Belanja: Rp ${formatter.format(total)}\n\nSimpan pesan ini sebagai struk digital Anda.';
               
               final url = Uri.parse('whatsapp://send?phone=' + formattedPhone + '&text=' + Uri.encodeComponent(message));
               final urlWeb = Uri.parse('https://wa.me/' + formattedPhone + '?text=' + Uri.encodeComponent(message));
