@@ -46,7 +46,7 @@ class _StockOpnameScreenState extends State<StockOpnameScreen> {
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.fact_check)),
                 title: Text("Opname: ${DateFormat('dd MMM yyyy HH:mm').format(op.date)}"),
-                subtitle: Text("Catatan: ${op.notes ?? "-"} | Status: ${op.status}"),
+                subtitle: Text("Status: ${op.status}"),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   showDialog(
