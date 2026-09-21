@@ -4,6 +4,7 @@ import '../../../core/utils/image_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../core/database/database.dart';
 import 'package:drift/drift.dart' as drift;
@@ -576,6 +577,63 @@ class _POSScreenState extends State<POSScreen> {
           ),
         );
       },
+    );
+  }
+
+
+  void _showWhatsAppDialog(String customerName, String phone, String txId, double total, String storeName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Kirim Struk via WhatsApp?'),
+        content: Text('Kirim struk digital ke ' + customerName + ' (' + phone + ')?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Lewati'),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.send),
+            label: const Text('Kirim WA'),
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              String formattedPhone = phone.trim();
+              if (formattedPhone.startsWith('0')) {
+                formattedPhone = '62' + formattedPhone.substring(1);
+              } else if (formattedPhone.startsWith('+')) {
+                formattedPhone = formattedPhone.substring(1);
+              }
+              
+              final formatter = NumberFormat('#,###', 'id_ID');
+              final message = 'Halo *' + customerName + '*,
+
+Terima kasih telah berbelanja di *' + storeName + '*!
+
+Nomor Struk: ' + txId + '
+Total Belanja: Rp ' + formatter.format(total) + '
+
+Simpan pesan ini sebagai struk digital Anda.';
+              
+              final url = Uri.parse('whatsapp://send?phone=' + formattedPhone + '&text=' + Uri.encodeComponent(message));
+              final urlWeb = Uri.parse('https://wa.me/' + formattedPhone + '?text=' + Uri.encodeComponent(message));
+              
+              try {
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else if (await canLaunchUrl(urlWeb)) {
+                  await launchUrl(urlWeb, mode: LaunchMode.externalApplication);
+                } else {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membuka WhatsApp. Pastikan WA terinstal di perangkat ini.')));
+                }
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ' + e.toString())));
+              }
+            },
+          ),
+        ]
+      )
     );
   }
 
@@ -1355,7 +1413,9 @@ class _POSScreenState extends State<POSScreen> {
       ],
     );
   }
-}
+
+  }
+
 
 class _ProductCard extends StatelessWidget {
   final String name;
@@ -1515,7 +1575,9 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
-}
+
+  }
+
 
 class _CheckoutDialog extends StatefulWidget {
   final double total;
@@ -1845,5 +1907,7 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
       ],
     );
   }
-}
+
+  }
+
 
