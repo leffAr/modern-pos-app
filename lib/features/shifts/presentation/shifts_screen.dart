@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/database.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../pos/data/receipt_printer_service.dart';
 
@@ -421,6 +422,9 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
                       actualCash: closingCash,
                       variance: selisih,
                     );
+                    if (business.phone != null && business.phone!.isNotEmpty) {
+                      _showAdminWhatsAppDialog(business, shift.shiftName, cashierRealName, expectedCash, closingCash, selisih);
+                    }
                   }
                 }
               },
@@ -429,5 +433,54 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
         ],
       ),
     );
+
+  void _showAdminWhatsAppDialog(Business business, String shiftName, String cashierName, double expected, double actual, double selisih) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Kirim Laporan ke Admin?'),
+        content: Text('Kirim ringkasan tutup shift ke nomor WhatsApp Profil Toko (${business.phone})?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Lewati'),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.send),
+            label: const Text('Kirim WA'),
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              String formattedPhone = business.phone!.trim();
+              if (formattedPhone.startsWith('0')) {
+                formattedPhone = '62' + formattedPhone.substring(1);
+              } else if (formattedPhone.startsWith('+')) {
+                formattedPhone = formattedPhone.substring(1);
+              }
+              
+              final formatter = NumberFormat('#,###', 'id_ID');
+              final message = 'Laporan Tutup Shift: *' + shiftName + '*\nKasir: *' + cashierName + '*\n\nSeharusnya di Laci: Rp ' + formatter.format(expected) + '\nFisik Uang: Rp ' + formatter.format(actual) + '\nSelisih: Rp ' + formatter.format(selisih) + '\n\nWaktu Tutup: ' + DateFormat('dd MMM yyyy HH:mm').format(DateTime.now());
+              
+              final url = Uri.parse('whatsapp://send?phone=' + formattedPhone + '&text=' + Uri.encodeComponent(message));
+              final urlWeb = Uri.parse('https://wa.me/' + formattedPhone + '?text=' + Uri.encodeComponent(message));
+              
+              try {
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else if (await canLaunchUrl(urlWeb)) {
+                  await launchUrl(urlWeb, mode: LaunchMode.externalApplication);
+                } else {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membuka WhatsApp. Pastikan WA terinstal di perangkat ini.')));
+                }
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ' + e.toString())));
+              }
+            },
+          ),
+        ]
+      )
+    );
   }
+
 }
