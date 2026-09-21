@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/database.dart';
+import '../../reports/data/export_service.dart';
 
 class StockOpnameScreen extends StatefulWidget {
   const StockOpnameScreen({super.key});
@@ -45,7 +46,7 @@ class _StockOpnameScreenState extends State<StockOpnameScreen> {
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.fact_check)),
                 title: Text("Opname: ${DateFormat('dd MMM yyyy HH:mm').format(op.date)}"),
-                subtitle: Text("Catatan: ${op.status} | Status: ${op.status}"),
+                subtitle: Text("Catatan: ${op.notes ?? "-"} | Status: ${op.status}"),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   showDialog(
@@ -164,11 +165,13 @@ class _NewOpnameDialogState extends State<_NewOpnameDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return AlertDialog(
+      insetPadding: isMobile ? const EdgeInsets.all(16) : const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
       title: const Text("Buat Stok Opname"),
       content: SizedBox(
-        width: 600,
-        height: 400,
+        width: isMobile ? double.maxFinite : 600,
+        height: isMobile ? MediaQuery.of(context).size.height * 0.7 : 400,
         child: Column(
           children: [
             TextField(
@@ -287,11 +290,13 @@ class _ProductSelectionDialogState extends State<_ProductSelectionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return AlertDialog(
+      insetPadding: isMobile ? const EdgeInsets.all(16) : const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
       title: const Text("Pilih Produk"),
       content: SizedBox(
-        width: 400,
-        height: 500,
+        width: isMobile ? double.maxFinite : 400,
+        height: isMobile ? MediaQuery.of(context).size.height * 0.7 : 500,
         child: Column(
           children: [
             TextField(
@@ -510,6 +515,24 @@ class _EditOpnameDialogState extends State<_EditOpnameDialog> {
   }
 
   @override
+  void _exportPdf() async {
+    final headers = ['Nama Produk', 'Stok Sistem', 'Stok Aktual', 'Selisih'];
+    final data = <List<String>>[];
+    for (var item in _items) {
+      int system = item["systemStock"];
+      int actual = int.tryParse(item["ctrl"].text) ?? 0;
+      int selisih = actual - system;
+      data.add([item["productName"], system.toString(), actual.toString(), (selisih > 0 ? "+$selisih" : selisih.toString())]);
+    }
+    
+    await ExportService.exportToPdf(
+      title: 'Stok Opname ${DateFormat('dd MMM yyyy').format(widget.opname.date)}',
+      headers: headers,
+      data: data,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const AlertDialog(
@@ -517,11 +540,19 @@ class _EditOpnameDialogState extends State<_EditOpnameDialog> {
       );
     }
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return AlertDialog(
+      insetPadding: isMobile ? const EdgeInsets.all(16) : const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text("Edit Stok Opname"),
+          const Expanded(child: Text("Edit Stok Opname", style: TextStyle(fontSize: 18))),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf, color: Colors.blue),
+            onPressed: _exportPdf,
+            tooltip: "Cetak PDF",
+          ),
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
             onPressed: _isSaving ? null : _deleteOpname,
@@ -530,8 +561,8 @@ class _EditOpnameDialogState extends State<_EditOpnameDialog> {
         ],
       ),
       content: SizedBox(
-        width: 600,
-        height: 400,
+        width: isMobile ? double.maxFinite : 600,
+        height: isMobile ? MediaQuery.of(context).size.height * 0.7 : 400,
         child: Column(
           children: [
             ElevatedButton.icon(
@@ -556,7 +587,7 @@ class _EditOpnameDialogState extends State<_EditOpnameDialog> {
                     title: Text(item["productName"]),
                     subtitle: Text("Stok Sistem (saat opname): ${item["systemStock"]}"),
                     trailing: SizedBox(
-                      width: 150,
+                      width: 130,
                       child: Row(
                         children: [
                           Expanded(
