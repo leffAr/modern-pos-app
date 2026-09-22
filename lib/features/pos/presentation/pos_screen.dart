@@ -581,20 +581,60 @@ class _POSScreenState extends State<POSScreen> {
   }
 
 
-  void _sendWhatsAppReceipt(String customerName, String phone, String txId, double total, String storeName) async {
-              
-              String formattedPhone = phone.trim();
-              if (formattedPhone.startsWith('0')) {
-                formattedPhone = '62' + formattedPhone.substring(1);
-              } else if (formattedPhone.startsWith('+')) {
-                formattedPhone = formattedPhone.substring(1);
-              }
-              
-              final formatter = NumberFormat('#,###', 'id_ID');
-              final message = 'Halo *${customerName}*,\n\nTerima kasih telah berbelanja di *${storeName}*!\n\nNomor Struk: ${txId}\nTotal Belanja: Rp ${formatter.format(total)}\n\nSimpan pesan ini sebagai struk digital Anda.';
-              
-              final url = Uri.parse('whatsapp://send?phone=' + formattedPhone + '&text=' + Uri.encodeComponent(message));
-              final urlWeb = Uri.parse('https://wa.me/' + formattedPhone + '?text=' + Uri.encodeComponent(message));
+  void _sendWhatsAppReceipt(
+    String customerName, 
+    String phone, 
+    String txId, 
+    double total, 
+    String storeName,
+    List<Map<String, dynamic>> items,
+    double subtotal,
+    double discount,
+    double tax,
+    double paid,
+    double change,
+    String paymentMethod,
+  ) async {
+    String formattedPhone = phone.trim();
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '62' + formattedPhone.substring(1);
+    } else if (formattedPhone.startsWith('+')) {
+      formattedPhone = formattedPhone.substring(1);
+    }
+
+    final formatter = NumberFormat('#,###', 'id_ID');
+    
+    String itemList = "";
+    for (var item in items) {
+       final product = item['product'];
+       final qty = item['qty'] as int;
+       final price = product.price;
+       final sub = price * qty;
+       itemList += "- ${product.name} (x$qty)\n  Rp ${formatter.format(price)} = Rp ${formatter.format(sub)}\n";
+    }
+
+    final nowStr = DateFormat('dd MMM yyyy HH:mm').format(DateTime.now());
+    final message = '''Halo *$customerName*,
+Terima kasih telah berbelanja di *$storeName*!
+
+*Struk Pembelian*
+No: $txId
+Tanggal: $nowStr
+-------------------------
+$itemList-------------------------
+Subtotal: Rp ${formatter.format(subtotal)}
+Diskon: Rp ${formatter.format(discount)}
+Pajak: Rp ${formatter.format(tax)}
+*Total: Rp ${formatter.format(total)}*
+-------------------------
+Metode: $paymentMethod
+Dibayar: Rp ${formatter.format(paid)}
+Kembali: Rp ${formatter.format(change)}
+
+Simpan pesan ini sebagai struk digital Anda.''';
+
+    final url = Uri.parse('whatsapp://send?phone=' + formattedPhone + '&text=' + Uri.encodeComponent(message));
+    final urlWeb = Uri.parse('https://wa.me/' + formattedPhone + '?text=' + Uri.encodeComponent(message));
               
               try {
                 if (await canLaunchUrl(url)) {
@@ -818,7 +858,7 @@ class _POSScreenState extends State<POSScreen> {
                 style: FilledButton.styleFrom(backgroundColor: Colors.green),
                 onPressed: () {
                   Navigator.pop(ctx);
-                  _sendWhatsAppReceipt(cName!, cPhone, txId, finalGrandTotal, business.name);
+                  _sendWhatsAppReceipt(cName!, cPhone, txId, finalGrandTotal, business.name, _cartItems, _subtotal, _discountAmount, _tax, paid, change, paymentMethod);
                 }
               )
             ]
