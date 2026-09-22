@@ -107,6 +107,37 @@ class _MainLayoutState extends State<MainLayout> {
     _navDestinations.add(const NavigationRailDestination(icon: Icon(Icons.print_outlined), selectedIcon: Icon(Icons.print), label: Text('Printer')));
   }
 
+  Widget _buildAnimatedNavItem(BuildContext context, IconData icon, int index, String label, {bool isMenu = false}) {
+    final isSelected = !isMenu && _selectedIndex == index;
+    final color = isSelected ? Colors.blue : Colors.grey.shade400;
+
+    return GestureDetector(
+      onTap: () {
+        if (isMenu) {
+          Scaffold.of(context).openDrawer();
+        } else {
+          _onDestinationSelected(index);
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: AnimatedScale(
+          scale: isSelected ? 1.2 : 1.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
+          child: Icon(icon, color: color, size: 26),
+        ),
+      ),
+    );
+  }
+
   void _onDestinationSelected(int index) {
     setState(() {
       _selectedIndex = index;
@@ -307,57 +338,36 @@ class _MainLayoutState extends State<MainLayout> {
       ),
       bottomNavigationBar: isMobile
           ? Builder(
-              builder: (context) => BottomAppBar(
-                shape: const CircularNotchedRectangle(),
-                notchMargin: 8.0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(
-                      tooltip: 'Buka Menu',
-                      icon: const Icon(Icons.menu, size: 28),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                    if (widget.userRole == 'Admin') ...[
-                      IconButton(
-                        tooltip: 'Dashboard',
-                        icon: Icon(Icons.dashboard, color: _selectedIndex == 0 ? Colors.blue : Colors.grey),
-                        onPressed: () => _onDestinationSelected(0),
-                      ),
-                      IconButton(
-                        tooltip: 'Produk',
-                        icon: Icon(Icons.inventory_2, color: _selectedIndex == 1 ? Colors.blue : Colors.grey),
-                        onPressed: () => _onDestinationSelected(1),
-                      ),
-                      IconButton(
-                        tooltip: 'Laporan',
-                        icon: Icon(Icons.bar_chart, color: _selectedIndex == 7 ? Colors.blue : Colors.grey),
-                        onPressed: () => _onDestinationSelected(7),
-                      ),
-                    ],
-                    if (widget.userRole == 'Kasir') ...[
-                      IconButton(
-                        tooltip: 'Kasir',
-                        icon: Icon(Icons.point_of_sale, color: _selectedIndex == 0 ? Colors.blue : Colors.grey),
-                        onPressed: () => _onDestinationSelected(0),
-                      ),
-                      IconButton(
-                        tooltip: 'Produk',
-                        icon: Icon(Icons.inventory_2, color: _selectedIndex == 1 ? Colors.blue : Colors.grey),
-                        onPressed: () => _onDestinationSelected(1),
-                      ),
-                      IconButton(
-                        tooltip: 'Shift',
-                        icon: Icon(Icons.access_time, color: _selectedIndex == 2 ? Colors.blue : Colors.grey),
-                        onPressed: () => _onDestinationSelected(2),
-                      ),
-                      IconButton(
-                        tooltip: 'Pelanggan',
-                        icon: Icon(Icons.people, color: _selectedIndex == 3 ? Colors.blue : Colors.grey),
-                        onPressed: () => _onDestinationSelected(3),
-                      ),
-                    ],
+              builder: (context) => Container(
+                padding: const EdgeInsets.only(bottom: 12, top: 12, left: 16, right: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    )
                   ],
+                ),
+                child: SafeArea(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildAnimatedNavItem(context, Icons.menu, -1, 'Menu', isMenu: true),
+                      if (widget.userRole == 'Admin') ...[
+                        _buildAnimatedNavItem(context, Icons.dashboard_rounded, 0, 'Dashboard'),
+                        _buildAnimatedNavItem(context, Icons.inventory_2_rounded, 1, 'Produk'),
+                        _buildAnimatedNavItem(context, Icons.bar_chart_rounded, 7, 'Laporan'),
+                      ],
+                      if (widget.userRole == 'Kasir') ...[
+                        _buildAnimatedNavItem(context, Icons.point_of_sale_rounded, 0, 'Kasir'),
+                        _buildAnimatedNavItem(context, Icons.inventory_2_rounded, 1, 'Produk'),
+                        _buildAnimatedNavItem(context, Icons.access_time_rounded, 2, 'Shift'),
+                        _buildAnimatedNavItem(context, Icons.people_alt_rounded, 3, 'Pelanggan'),
+                      ]
+                    ],
+                  ),
                 ),
               ),
             )
