@@ -121,17 +121,17 @@ class _MainLayoutState extends State<MainLayout> {
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutBack,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: AnimatedScale(
-          scale: isSelected ? 1.2 : 1.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutBack,
+          scale: isSelected ? 1.15 : 1.0,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
           child: Icon(icon, color: color, size: 26),
         ),
       ),
@@ -201,7 +201,7 @@ class _MainLayoutState extends State<MainLayout> {
             body: Stack(
         children: [
           AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOut,
             left: isMobile ? 0 : (_isSidebarOpen ? 90 : 0),
             right: 0,
@@ -249,7 +249,7 @@ class _MainLayoutState extends State<MainLayout> {
           
           if (!isMobile)
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 400),
               curve: Curves.easeInOut,
               left: _isSidebarOpen ? 0 : -90,
               top: 0,
@@ -307,7 +307,7 @@ class _MainLayoutState extends State<MainLayout> {
             ),
           if (!isMobile)
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 400),
               curve: Curves.easeInOut,
               left: _isSidebarOpen ? 90 : 0,
               bottom: 32,
