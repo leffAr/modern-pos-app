@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/database/database.dart';
 import 'purchase_form_screen.dart';
+import 'return_form_screen.dart';
 import 'package:drift/drift.dart' as drift;
 
 class PurchaseScreen extends StatefulWidget {
@@ -70,68 +71,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
   }
 
   void _showReturnForm([Return? existing]) {
-    final invCtrl = TextEditingController(text: existing?.transactionId ?? '');
-    final reasonCtrl = TextEditingController(text: existing?.reason ?? '');
-    final refundCtrl = TextEditingController(text: existing != null ? existing.amountRefunded.toInt().toString() : '');
-    final isEdit = existing != null;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isEdit ? 'Edit Retur' : 'Catat Retur Pembelian'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: invCtrl,
-              decoration: const InputDecoration(labelText: 'Nomor Transaksi (Invoice)', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonCtrl,
-              decoration: const InputDecoration(labelText: 'Alasan Retur', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: refundCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Jumlah Dana Dikembalikan (Refund)', prefixText: 'Rp ', border: OutlineInputBorder()),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('BATAL')),
-          FilledButton(
-            onPressed: () async {
-              if (invCtrl.text.isEmpty || refundCtrl.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nomor invoice dan nominal refund harus diisi!')));
-                return;
-              }
-
-              final retId = existing?.id ?? 'RET-${DateTime.now().microsecondsSinceEpoch}';
-              
-              await appDb.into(appDb.returns).insertOnConflictUpdate(
-                ReturnsCompanion.insert(
-                  id: retId,
-                  transactionId: invCtrl.text,
-                  reason: reasonCtrl.text.isNotEmpty ? reasonCtrl.text : 'Lainnya',
-                  amountRefunded: drift.Value(double.parse(refundCtrl.text)),
-                  date: drift.Value(existing?.date ?? DateTime.now()),
-                )
-              );
-              
-              if (mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(isEdit ? 'Retur berhasil diperbarui!' : 'Retur berhasil dicatat!')),
-                );
-              }
-            },
-            child: Text(isEdit ? 'PERBARUI' : 'SIMPAN'),
-          ),
-        ],
-      ),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ReturnFormScreen(existingReturn: existing)));
   }
 
   void _deleteReturn(Return r) {
