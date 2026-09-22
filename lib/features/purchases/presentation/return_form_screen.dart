@@ -32,14 +32,10 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
   }
 
   Future<void> _showRecentTransactions() async {
-    // Gabungan transaksi dan pembelian
-    final recentTxs = await (appDb.select(appDb.transactions)..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)])..limit(10)).get();
-    final recentPos = await (appDb.select(appDb.purchases)..orderBy([(t) => drift.OrderingTerm.desc(t.date)])..limit(10)).get();
+    final recentPos = await (appDb.select(appDb.purchases)..orderBy([(t) => drift.OrderingTerm.desc(t.date)])..limit(20)).get();
     
-    final List<dynamic> allRecent = [...recentTxs, ...recentPos];
-    
-    if (allRecent.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Belum ada data.')));
+    if (recentPos.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Belum ada data pembelian.')));
       return;
     }
 
@@ -47,21 +43,16 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
       showModalBottomSheet(
         context: context,
         builder: (context) => ListView.builder(
-          itemCount: allRecent.length,
+          itemCount: recentPos.length,
           itemBuilder: (context, i) {
-            final item = allRecent[i];
-            final isPo = item is Purchase;
-            final ref = isPo ? item.referenceNumber : (item as Transaction).receiptNumber;
-            final total = isPo ? item.total : (item as Transaction).grandTotal;
-            final date = isPo ? item.date : (item as Transaction).createdAt;
-            
+            final item = recentPos[i];
             return ListTile(
-              leading: Icon(isPo ? Icons.local_shipping : Icons.receipt, color: isPo ? Colors.blue : Colors.green),
-              title: Text('$ref ${isPo ? "(Pembelian)" : "(Penjualan)"}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('Total: Rp ${NumberFormat('#,###', 'id_ID').format(total)} | ${DateFormat('dd MMM HH:mm').format(date)}'),
+              leading: const Icon(Icons.local_shipping, color: Colors.blue),
+              title: Text(item.referenceNumber, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('Total: Rp ${NumberFormat('#,###', 'id_ID').format(item.total)} | ${DateFormat('dd MMM HH:mm').format(item.date)}'),
               onTap: () {
                 Navigator.pop(context);
-                _invCtrl.text = ref;
+                _invCtrl.text = item.referenceNumber;
                 _searchTransaction();
               },
             );
@@ -79,15 +70,13 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
       _isLoading = true;
       _foundTransaction = null;
       _items.clear();
-      _isPurchaseReturn = false;
+      _isPurchaseReturn = true;
     });
 
     try {
-      // 1. Coba cari di Purchases (PO)
       final matchingPos = await (appDb.select(appDb.purchases)..where((t) => t.id.like('%$invId%') | t.referenceNumber.like('%$invId%'))).get();
       if (matchingPos.isNotEmpty) {
          _foundTransaction = matchingPos.first;
-         _isPurchaseReturn = true;
          
          final pi = await (appDb.select(appDb.purchaseItems)..where((t) => t.purchaseId.equals((_foundTransaction as Purchase).id))).get();
          for (var ti in pi) {
@@ -101,28 +90,6 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                'price': ti.cost,
                'isReturned': true,
              });
-           }
-         }
-      } else {
-         // 2. Coba cari di Transactions (Penjualan)
-         final matchingTxs = await (appDb.select(appDb.transactions)..where((t) => t.id.like('%$invId%') | t.receiptNumber.like('%$invId%'))).get();
-         if (matchingTxs.isNotEmpty) {
-           _foundTransaction = matchingTxs.first;
-           _isPurchaseReturn = false;
-           
-           final tiList = await (appDb.select(appDb.transactionItems)..where((t) => t.transactionId.equals((_foundTransaction as Transaction).id))).get();
-           for (var ti in tiList) {
-             final p = await (appDb.select(appDb.products)..where((t) => t.id.equals(ti.productId))).getSingleOrNull();
-             if (p != null) {
-               _items.add({
-                 'productId': p.id,
-                 'name': p.name,
-                 'maxQty': ti.quantity,
-                 'qtyCtrl': TextEditingController(text: widget.existingReturn != null ? '0' : ti.quantity.toString()),
-                 'price': ti.price,
-                 'isReturned': true,
-               });
-             }
            }
          }
       }
@@ -188,7 +155,8 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                 if (inv != null) {
                   // Jika Retur Penjualan -> Stok Bertambah
                   // Jika Retur Pembelian -> Stok Berkurang
-                  final newStock = _isPurchaseReturn ? (inv.stock - qty) : (inv.stock + qty);
+                  // Retur Pembelian -> Stok Berkurang (Barang dikembalikan ke Supplier)
+                  final newStock = inv.stock - qty;
                   await (appDb.update(appDb.inventory)..where((t) => t.id.equals(inv.id))).write(
                     InventoryCompanion(stock: drift.Value(newStock))
                   );
@@ -230,7 +198,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.existingReturn != null ? 'Edit Retur' : 'Formulir Retur (Pembelian / Penjualan)'),
+        title: Text(widget.existingReturn != null ? 'Edit Retur' : 'Formulir Retur Pembelian (Ke Supplier)'),
         actions: [
           if (_isLoading) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: Colors.white)))
           else IconButton(
@@ -254,7 +222,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Cari Nomor PO Pembelian / Transaksi Penjualan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const Text('Cari Nomor PO Pembelian', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -262,7 +230,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                               child: TextField(
                                 controller: _invCtrl,
                                 decoration: const InputDecoration(
-                                  labelText: 'Ketik Nomor PO-... atau INV-...', 
+                                  labelText: 'Ketik Nomor PO-...', 
                                   prefixIcon: Icon(Icons.receipt_long), 
                                   border: OutlineInputBorder(),
                                   isDense: true,
@@ -294,7 +262,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '${_isPurchaseReturn ? "Pembelian" : "Transaksi"} Ditemukan!\nTotal: Rp ${formatter.format(_isPurchaseReturn ? _foundTransaction!.total : _foundTransaction!.grandTotal)}\nStatus: ${_foundTransaction!.status}',
+                                    'Pembelian Ditemukan!\nTotal: Rp ${formatter.format(_foundTransaction!.total)}\nStatus: ${_foundTransaction!.status}',
                                     style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                                   ),
                                 ),
