@@ -41,8 +41,13 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
     });
 
     try {
-      final tx = await (appDb.select(appDb.transactions)
-        ..where((t) => t.id.equals(invId))).getSingleOrNull();
+      // Cari transaksi yang ID atau ReceiptNumber-nya mengandung kata kunci yang diketik
+      final matchingTxs = await (appDb.select(appDb.transactions)
+        ..where((t) => t.id.like('%$invId%') | t.receiptNumber.like('%$invId%'))
+        ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)])
+      ).get();
+      
+      final tx = matchingTxs.isNotEmpty ? matchingTxs.first : null;
       
       if (tx == null) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transaksi tidak ditemukan!')));
