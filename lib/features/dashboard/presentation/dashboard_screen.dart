@@ -287,7 +287,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return StreamBuilder<List<drift.TypedResult>>(
       stream: (appDb.select(appDb.inventory).join([
         drift.innerJoin(appDb.products, appDb.products.id.equalsExp(appDb.inventory.productId))
-      ])..where(appDb.inventory.stock.isSmallerOrEqual(appDb.inventory.minimumStock))).watch(),
+      ])..where(drift.CustomExpression<bool>('inventory.stock <= inventory.minimum_stock'))).watch(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
         
