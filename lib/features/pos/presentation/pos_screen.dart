@@ -636,17 +636,21 @@ Simpan pesan ini sebagai struk digital Anda.''';
     final url = Uri.parse('whatsapp://send?phone=' + formattedPhone + '&text=' + Uri.encodeComponent(message));
     final urlWeb = Uri.parse('https://wa.me/' + formattedPhone + '?text=' + Uri.encodeComponent(message));
               
-              try {
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                } else if (await canLaunchUrl(urlWeb)) {
+                            try {
+                // Coba paksa buka skema WA langsung tanpa ngecek canLaunchUrl (sering gagal di Android 11+)
+                bool launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+                if (!launched) {
+                  // Jika aplikasi WA tidak menangkap, gunakan browser
                   await launchUrl(urlWeb, mode: LaunchMode.externalApplication);
-                } else {
-                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membuka WhatsApp. Pastikan WA terinstal di perangkat ini.')));
                 }
               } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ' + e.toString())));
-    }
+                // Fallback terakhir lewat web
+                try {
+                  await launchUrl(urlWeb, mode: LaunchMode.externalApplication);
+                } catch (e2) {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membuka WhatsApp: $e2')));
+                }
+              }
   }
 
   void _showCheckoutDialog() async {
