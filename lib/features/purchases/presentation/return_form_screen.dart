@@ -17,7 +17,8 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
   final _reasonCtrl = TextEditingController();
   
   bool _isLoading = false;
-  Transaction? _foundTransaction;
+  bool _isPurchaseReturn = false;
+  dynamic _foundTransaction;
   List<Map<String, dynamic>> _items = [];
   
   @override
@@ -30,6 +31,46 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
     }
   }
 
+  Future<void> _showRecentTransactions() async {
+    // Gabungan transaksi dan pembelian
+    final recentTxs = await (appDb.select(appDb.transactions)..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)])..limit(10)).get();
+    final recentPos = await (appDb.select(appDb.purchases)..orderBy([(t) => drift.OrderingTerm.desc(t.date)])..limit(10)).get();
+    
+    final List<dynamic> allRecent = [...recentTxs, ...recentPos];
+    
+    if (allRecent.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Belum ada data.')));
+      return;
+    }
+
+    if (mounted) {
+      showModalBottomSheet(
+        context: context,
+        builder: (context) => ListView.builder(
+          itemCount: allRecent.length,
+          itemBuilder: (context, i) {
+            final item = allRecent[i];
+            final isPo = item is Purchase;
+            final ref = isPo ? item.referenceNumber : (item as Transaction).receiptNumber;
+            final total = isPo ? item.total : (item as Transaction).grandTotal;
+            final date = isPo ? item.date : (item as Transaction).createdAt;
+            
+            return ListTile(
+              leading: Icon(isPo ? Icons.local_shipping : Icons.receipt, color: isPo ? Colors.blue : Colors.green),
+              title: Text('$ref ${isPo ? "(Pembelian)" : "(Penjualan)"}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('Total: Rp ${NumberFormat('#,###', 'id_ID').format(total)} | ${DateFormat('dd MMM HH:mm').format(date)}'),
+              onTap: () {
+                Navigator.pop(context);
+                _invCtrl.text = ref;
+                _searchTransaction();
+              },
+            );
+          },
+        ),
+      );
+    }
+  }
+
   Future<void> _searchTransaction() async {
     final invId = _invCtrl.text.trim();
     if (invId.isEmpty) return;
@@ -38,45 +79,58 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
       _isLoading = true;
       _foundTransaction = null;
       _items.clear();
+      _isPurchaseReturn = false;
     });
 
     try {
-      // Cari transaksi yang ID atau ReceiptNumber-nya mengandung kata kunci yang diketik
-      final matchingTxs = await (appDb.select(appDb.transactions)
-        ..where((t) => t.id.like('%$invId%') | t.receiptNumber.like('%$invId%'))
-        ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)])
-      ).get();
+      // 1. Coba cari di Purchases (PO)
+      final matchingPos = await (appDb.select(appDb.purchases)..where((t) => t.id.like('%$invId%') | t.referenceNumber.like('%$invId%'))).get();
+      if (matchingPos.isNotEmpty) {
+         _foundTransaction = matchingPos.first;
+         _isPurchaseReturn = true;
+         
+         final pi = await (appDb.select(appDb.purchaseItems)..where((t) => t.purchaseId.equals((_foundTransaction as Purchase).id))).get();
+         for (var ti in pi) {
+           final p = await (appDb.select(appDb.products)..where((t) => t.id.equals(ti.productId))).getSingleOrNull();
+           if (p != null) {
+             _items.add({
+               'productId': p.id,
+               'name': p.name,
+               'maxQty': ti.quantity,
+               'qtyCtrl': TextEditingController(text: widget.existingReturn != null ? '0' : ti.quantity.toString()),
+               'price': ti.cost,
+               'isReturned': true,
+             });
+           }
+         }
+      } else {
+         // 2. Coba cari di Transactions (Penjualan)
+         final matchingTxs = await (appDb.select(appDb.transactions)..where((t) => t.id.like('%$invId%') | t.receiptNumber.like('%$invId%'))).get();
+         if (matchingTxs.isNotEmpty) {
+           _foundTransaction = matchingTxs.first;
+           _isPurchaseReturn = false;
+           
+           final tiList = await (appDb.select(appDb.transactionItems)..where((t) => t.transactionId.equals((_foundTransaction as Transaction).id))).get();
+           for (var ti in tiList) {
+             final p = await (appDb.select(appDb.products)..where((t) => t.id.equals(ti.productId))).getSingleOrNull();
+             if (p != null) {
+               _items.add({
+                 'productId': p.id,
+                 'name': p.name,
+                 'maxQty': ti.quantity,
+                 'qtyCtrl': TextEditingController(text: widget.existingReturn != null ? '0' : ti.quantity.toString()),
+                 'price': ti.price,
+                 'isReturned': true,
+               });
+             }
+           }
+         }
+      }
       
-      final tx = matchingTxs.isNotEmpty ? matchingTxs.first : null;
-      
-      if (tx == null) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transaksi tidak ditemukan!')));
+      if (_foundTransaction == null) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data tidak ditemukan!')));
         return;
       }
-
-      _foundTransaction = tx;
-
-      final txItems = await (appDb.select(appDb.transactionItems)
-        ..where((t) => t.transactionId.equals(tx.id))).get();
-      
-      for (var ti in txItems) {
-        final product = await (appDb.select(appDb.products)
-          ..where((t) => t.id.equals(ti.productId))).getSingleOrNull();
-        
-        if (product != null) {
-          _items.add({
-            'productId': product.id,
-            'name': product.name,
-            'maxQty': ti.quantity,
-            'qtyCtrl': TextEditingController(text: widget.existingReturn != null ? '0' : ti.quantity.toString()), // If editing, default to 0 so they don't double return. Wait, since we don't track ReturnItems, editing a return is complex. Let's just default to maxQty.
-            'price': ti.price,
-            'isReturned': true, // Checkbox to select if this item is returned
-          });
-        }
-      }
-      
-      // If editing, we just set total refund amount, but since we don't have ReturnItems, we can't accurately prepopulate checks. We'll just load the items.
-      
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
@@ -124,7 +178,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
           )
         );
 
-        // 2. Update Stock if this is a NEW return (don't double count if editing)
+        // 2. Update Stock if this is a NEW return
         if (widget.existingReturn == null) {
           for (var item in _items) {
             if (item['isReturned'] == true) {
@@ -132,9 +186,11 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
               if (qty > 0) {
                 final inv = await (appDb.select(appDb.inventory)..where((t) => t.productId.equals(item['productId']))).getSingleOrNull();
                 if (inv != null) {
-                  // Return item to store => INCREASE STOCK
+                  // Jika Retur Penjualan -> Stok Bertambah
+                  // Jika Retur Pembelian -> Stok Berkurang
+                  final newStock = _isPurchaseReturn ? (inv.stock - qty) : (inv.stock + qty);
                   await (appDb.update(appDb.inventory)..where((t) => t.id.equals(inv.id))).write(
-                    InventoryCompanion(stock: drift.Value(inv.stock + qty))
+                    InventoryCompanion(stock: drift.Value(newStock))
                   );
                 }
               }
@@ -174,7 +230,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.existingReturn != null ? 'Edit Retur' : 'Retur Pelanggan (Barang Kembali)'),
+        title: Text(widget.existingReturn != null ? 'Edit Retur' : 'Formulir Retur (Pembelian / Penjualan)'),
         actions: [
           if (_isLoading) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: Colors.white)))
           else IconButton(
@@ -198,7 +254,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Cari Transaksi Pelanggan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const Text('Cari Nomor PO Pembelian / Transaksi Penjualan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -206,7 +262,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                               child: TextField(
                                 controller: _invCtrl,
                                 decoration: const InputDecoration(
-                                  labelText: 'Nomor Transaksi (INV-...)', 
+                                  labelText: 'Ketik Nomor PO-... atau INV-...', 
                                   prefixIcon: Icon(Icons.receipt_long), 
                                   border: OutlineInputBorder(),
                                   isDense: true,
@@ -218,6 +274,12 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                               onPressed: _searchTransaction,
                               icon: const Icon(Icons.search),
                               label: const Text('Cari'),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              onPressed: _showRecentTransactions,
+                              icon: const Icon(Icons.list),
+                              label: const Text('Pilih'),
                             ),
                           ],
                         ),
@@ -232,7 +294,7 @@ class _ReturnFormScreenState extends State<ReturnFormScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Transaksi Ditemukan!\nTotal Belanja: Rp ${formatter.format(_foundTransaction!.grandTotal)}\nStatus: ${_foundTransaction!.status}',
+                                    '${_isPurchaseReturn ? "Pembelian" : "Transaksi"} Ditemukan!\nTotal: Rp ${formatter.format(_isPurchaseReturn ? _foundTransaction!.total : _foundTransaction!.grandTotal)}\nStatus: ${_foundTransaction!.status}',
                                     style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                                   ),
                                 ),
