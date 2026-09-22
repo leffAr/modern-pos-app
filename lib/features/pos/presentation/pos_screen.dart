@@ -581,23 +581,7 @@ class _POSScreenState extends State<POSScreen> {
   }
 
 
-  void _showWhatsAppDialog(String customerName, String phone, String txId, double total, String storeName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Kirim Struk via WhatsApp?'),
-        content: Text('Kirim struk digital ke ' + customerName + ' (' + phone + ')?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Lewati'),
-          ),
-          FilledButton.icon(
-            icon: const Icon(Icons.send),
-            label: const Text('Kirim WA'),
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
-            onPressed: () async {
-              Navigator.pop(context);
+  void _sendWhatsAppReceipt(String customerName, String phone, String txId, double total, String storeName) async {
               
               String formattedPhone = phone.trim();
               if (formattedPhone.startsWith('0')) {
@@ -621,13 +605,8 @@ class _POSScreenState extends State<POSScreen> {
                   if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membuka WhatsApp. Pastikan WA terinstal di perangkat ini.')));
                 }
               } catch (e) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ' + e.toString())));
-              }
-            },
-          ),
-        ]
-      )
-    );
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ' + e.toString())));
+    }
   }
 
   void _showCheckoutDialog() async {
@@ -786,9 +765,8 @@ class _POSScreenState extends State<POSScreen> {
       // Use the passed in business object instead of querying again
 
       final prefs = await SharedPreferences.getInstance();
-      final isAutoPrint = prefs.getBool("isAutoPrint") ?? true;
-
-      if (isAutoPrint) {
+      
+      Future<void> doPrint() async {
         await ReceiptPrinterService.printReceipt(
           business: business,
           items: _cartItems,
@@ -806,6 +784,50 @@ class _POSScreenState extends State<POSScreen> {
           dueDate: dueDate,
           pointsUsed: pointsUsedAmount,
         );
+      }
+
+      final cName = _selectedCustomer?.name;
+      final cPhone = _selectedCustomer?.phone;
+
+      if (cPhone != null && cPhone.isNotEmpty) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Transaksi Berhasil!'),
+            content: Text('Kirim struk digital ke WA $cName atau cetak fisik?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  if (isAutoPrint) doPrint();
+                },
+                child: const Text('Lewati')
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.print),
+                label: const Text('Cetak'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  doPrint();
+                }
+              ),
+              FilledButton.icon(
+                icon: const Icon(Icons.send),
+                label: const Text('Kirim WA'),
+                style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _sendWhatsAppReceipt(cName!, cPhone, txId, finalGrandTotal, business.name);
+                }
+              )
+            ]
+          )
+        );
+      } else {
+        if (isAutoPrint) {
+          await doPrint();
+        }
       }
 
       setState(() {
