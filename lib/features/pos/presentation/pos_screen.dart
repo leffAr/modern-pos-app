@@ -765,7 +765,7 @@ class _POSScreenState extends State<POSScreen> {
       // Use the passed in business object instead of querying again
 
       final prefs = await SharedPreferences.getInstance();
-      
+      final isAutoPrint = prefs.getBool('isAutoPrint') ?? true;
       Future<void> doPrint() async {
         await ReceiptPrinterService.printReceipt(
           business: business,
