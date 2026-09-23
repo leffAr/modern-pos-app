@@ -606,11 +606,11 @@ class _POSScreenState extends State<POSScreen> {
     
     String itemList = "";
     for (var item in items) {
-       final product = item['product'];
+       final name = item['name'] as String;
        final qty = item['qty'] as int;
-       final price = product.price;
+       final price = item['price'] as double;
        final sub = price * qty;
-       itemList += "- ${product.name} (x$qty)\n  Rp ${formatter.format(price)} = Rp ${formatter.format(sub)}\n";
+       itemList += "- $name (x$qty)\n  Rp ${formatter.format(price)} = Rp ${formatter.format(sub)}\n";
     }
 
     final nowStr = DateFormat('dd MMM yyyy HH:mm').format(DateTime.now());
