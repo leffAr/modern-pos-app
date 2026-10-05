@@ -9,6 +9,7 @@ import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'thermal_printer_service.dart';
 
 class ReceiptPrinterService {
   static final _fmt = NumberFormat('#,###', 'id_ID');
@@ -35,6 +36,50 @@ class ReceiptPrinterService {
     DateTime? dueDate,
     double pointsUsed = 0,
   }) async {
+    // 1. Cek apakah mode koneksi adalah Direct Bluetooth atau Direct Network
+    final connectionType = await ThermalPrinterService.getConnectionType();
+    if (connectionType == PrinterConnectionType.bluetooth || connectionType == PrinterConnectionType.network) {
+      try {
+        final escBytes = await generateThermalEscPosBytes(
+          business: business,
+          items: items,
+          subtotal: subtotal,
+          tax: tax,
+          discount: discount,
+          total: total,
+          paid: paid,
+          change: change,
+          paymentMethod: paymentMethod,
+          cashierName: cashierName,
+          tableNumber: tableNumber,
+          queueNumber: queueNumber,
+          dueDate: dueDate,
+          pointsUsed: pointsUsed,
+        );
+
+        if (escBytes.isNotEmpty) {
+          bool printed = false;
+          if (connectionType == PrinterConnectionType.bluetooth) {
+            printed = await ThermalPrinterService.printBytesViaBluetooth(escBytes);
+          } else if (connectionType == PrinterConnectionType.network) {
+            final prefs = await SharedPreferences.getInstance();
+            final ip = prefs.getString(ThermalPrinterService.keyNetIp) ?? "192.168.1.200";
+            final port = prefs.getInt(ThermalPrinterService.keyNetPort) ?? 9100;
+            printed = await ThermalPrinterService.printBytesViaNetwork(ip, port, escBytes);
+          }
+
+          if (printed) {
+            log('Struk berhasil dicetak langsung ke Thermal Printer ($connectionType)');
+            return;
+          } else {
+            log('Direct thermal printing gagal/terputus, mengalihkan ke dialog cetak sistem...');
+          }
+        }
+      } catch (e) {
+        log('Direct thermal print error: $e, fallback ke PDF');
+      }
+    }
+
     final doc = pw.Document();
 
     pw.MemoryImage? logoImage;
@@ -55,13 +100,16 @@ class ReceiptPrinterService {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final paperSize = prefs.getString("paperSize") ?? "80";
+    final paperSize = prefs.getString("paperSize") ?? "58";
     final format = paperSize == "58" ? PdfPageFormat.roll57 : PdfPageFormat.roll80;
+    final margin = paperSize == "58"
+        ? const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 8)
+        : const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 12);
 
     doc.addPage(
       pw.Page(
         pageFormat: format,
-        margin: const pw.EdgeInsets.all(12),
+        margin: margin,
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
@@ -240,13 +288,16 @@ class ReceiptPrinterService {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final paperSize = prefs.getString("paperSize") ?? "80";
+    final paperSize = prefs.getString("paperSize") ?? "58";
     final format = paperSize == "58" ? PdfPageFormat.roll57 : PdfPageFormat.roll80;
+    final margin = paperSize == "58"
+        ? const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 8)
+        : const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 12);
 
     doc.addPage(
       pw.Page(
         pageFormat: format,
-        margin: const pw.EdgeInsets.all(12),
+        margin: margin,
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
@@ -550,30 +601,44 @@ class ReceiptPrinterService {
   }) async {
     List<int> bytes = [];
     try {
-      final profile = await CapabilityProfile.load();
-      final generator = Generator(PaperSize.mm58, profile);
+      final prefs = await SharedPreferences.getInstance();
+      final paperSize = prefs.getString(ThermalPrinterService.keyPaperSize) ?? "58";
+      final printLogo = prefs.getBool(ThermalPrinterService.keyPrintLogoThermal) ?? true;
+      final autoCut = prefs.getBool(ThermalPrinterService.keyAutoCut) ?? (paperSize == "80");
 
-      if (business.logoBase64 != null && business.logoBase64!.isNotEmpty) {
-        try {
-          final logoBytes = base64Decode(business.logoBase64!);
-          final image = img.decodeImage(logoBytes);
-          if (image != null) {
-            bytes += generator.imageRaster(image);
-            bytes += generator.emptyLines(1);
+      final profile = await CapabilityProfile.load();
+      final generator = Generator(paperSize == "80" ? PaperSize.mm80 : PaperSize.mm58, profile);
+
+      if (printLogo) {
+        img.Image? image;
+        if (business.logoBase64 != null && business.logoBase64!.isNotEmpty) {
+          try {
+            final logoBytes = base64Decode(business.logoBase64!);
+            image = img.decodeImage(logoBytes);
+          } catch (e) {
+            log('Failed to decode logo for thermal: $e');
           }
-        } catch (e) {
-          log('Failed to decode logo for thermal: $e');
+        } else {
+          try {
+            final byteData = await rootBundle.load('assets/images/logo_v2.png');
+            image = img.decodeImage(byteData.buffer.asUint8List());
+          } catch (e) {
+            log('Failed to load default logo for thermal: $e');
+          }
         }
-      } else {
-        try {
-          final byteData = await rootBundle.load('assets/images/logo_v2.png');
-          final image = img.decodeImage(byteData.buffer.asUint8List());
-          if (image != null) {
+
+        if (image != null) {
+          try {
+            final maxWidth = paperSize == "80" ? 320 : 200;
+            if (image.width > maxWidth) {
+              image = img.copyResize(image, width: maxWidth);
+            }
+            image = img.grayscale(image);
             bytes += generator.imageRaster(image);
             bytes += generator.emptyLines(1);
+          } catch (e) {
+            log('Error rasterizing logo on thermal: $e');
           }
-        } catch (e) {
-          log('Failed to load default logo for thermal: $e');
         }
       }
 
@@ -666,13 +731,67 @@ class ReceiptPrinterService {
       bytes += generator.text('Brg yg sudah dibeli tdk dapat ditukar', styles: const PosStyles(align: PosAlign.center));
       bytes += generator.emptyLines(2);
       
-      bytes += generator.cut();
+      if (autoCut) {
+        bytes += generator.cut();
+      } else {
+        bytes += generator.emptyLines(2);
+      }
       
       log("Berhasil men-generate ${bytes.length} bytes ESC/POS data.");
     } catch (e) {
       log("Error generating ESC/POS bytes: $e");
     }
     return bytes;
+  }
+
+  /// Mencetak sampel struk uji coba langsung ke printer aktif
+  static Future<bool> printTestReceipt({required Business business}) async {
+    final connectionType = await ThermalPrinterService.getConnectionType();
+    const testItems = [
+      {"name": "Item Uji Coba A", "qty": 1, "price": 15000.0, "variantName": null},
+      {"name": "Item Uji Coba B", "qty": 2, "price": 5000.0, "variantName": "Ukuran M"},
+    ];
+
+    if (connectionType == PrinterConnectionType.bluetooth || connectionType == PrinterConnectionType.network) {
+      final bytes = await generateThermalEscPosBytes(
+        business: business,
+        items: testItems,
+        subtotal: 25000.0,
+        tax: 0.0,
+        discount: 0.0,
+        total: 25000.0,
+        paid: 50000.0,
+        change: 25000.0,
+        paymentMethod: "CASH",
+        cashierName: "Admin (Test)",
+      );
+
+      if (bytes.isNotEmpty) {
+        if (connectionType == PrinterConnectionType.bluetooth) {
+          return await ThermalPrinterService.printBytesViaBluetooth(bytes);
+        } else {
+          final prefs = await SharedPreferences.getInstance();
+          final ip = prefs.getString(ThermalPrinterService.keyNetIp) ?? "192.168.1.200";
+          final port = prefs.getInt(ThermalPrinterService.keyNetPort) ?? 9100;
+          return await ThermalPrinterService.printBytesViaNetwork(ip, port, bytes);
+        }
+      }
+      return false;
+    } else {
+      await printReceipt(
+        business: business,
+        items: testItems,
+        subtotal: 25000.0,
+        discount: 0.0,
+        tax: 0.0,
+        total: 25000.0,
+        paid: 50000.0,
+        change: 25000.0,
+        paymentMethod: "CASH",
+        cashierName: "Admin (Test)",
+      );
+      return true;
+    }
   }
 
   

@@ -38,6 +38,7 @@ dependencies:
   google_fonts: ^6.3.0
   audioplayers: ^6.4.0
   url_launcher: ^6.3.1
+  print_bluetooth_thermal: ^1.2.5
 
 dev_dependencies:
   flutter_test:
