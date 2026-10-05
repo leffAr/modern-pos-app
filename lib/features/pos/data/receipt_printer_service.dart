@@ -18,6 +18,23 @@ class ReceiptPrinterService {
     return _fmt.format(val);
   }
 
+  /// Memuat font monospaced kasir modern standar Alfamart (RobotoMono dengan fallback Courier)
+  static Future<pw.ThemeData> _getReceiptTheme() async {
+    pw.Font baseFont;
+    pw.Font boldFont;
+    try {
+      baseFont = await PdfGoogleFonts.robotoMonoRegular();
+      boldFont = await PdfGoogleFonts.robotoMonoBold();
+    } catch (_) {
+      baseFont = pw.Font.courier();
+      boldFont = pw.Font.courierBold();
+    }
+    return pw.ThemeData.withFont(
+      base: baseFont,
+      bold: boldFont,
+    );
+  }
+
   /// Mencetak menggunakan PDF (Native Print Dialog / Uji Coba Layar)
   static Future<void> printReceipt({
     required Business business,
@@ -80,7 +97,8 @@ class ReceiptPrinterService {
       }
     }
 
-    final doc = pw.Document();
+    final theme = await _getReceiptTheme();
+    final doc = pw.Document(theme: theme);
 
     pw.MemoryImage? logoImage;
     if (business.logoBase64 != null && business.logoBase64!.isNotEmpty) {
@@ -106,6 +124,9 @@ class ReceiptPrinterService {
         ? const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 8)
         : const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 12);
 
+    final totalItems = items.fold<int>(0, (sum, item) => sum + ((item['qty'] as num?)?.toInt() ?? 1));
+    final txCode = 'TRX-${DateFormat('yyMMddHHmm').format(DateTime.now())}';
+
     doc.addPage(
       pw.Page(
         pageFormat: format,
@@ -116,138 +137,185 @@ class ReceiptPrinterService {
             children: [
               if (logoImage != null)
                 pw.Container(
-                  margin: const pw.EdgeInsets.only(bottom: 8),
-                  height: 50,
+                  margin: const pw.EdgeInsets.only(bottom: 6),
+                  height: 40,
                   child: pw.Image(logoImage),
                 ),
-              pw.Text(business.name, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-              if (business.address != null) pw.Text(business.address!, textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 10)),
-              if (business.phone != null) pw.Text('Telp: ${business.phone!}', style: const pw.TextStyle(fontSize: 10)),
-              
-              pw.SizedBox(height: 8),
-              pw.Divider(borderStyle: pw.BorderStyle.dashed),
+              pw.Text(
+                business.name.toUpperCase(),
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, letterSpacing: 0.5),
+              ),
+              if (business.address != null && business.address!.isNotEmpty)
+                pw.Text(
+                  business.address!.toUpperCase(),
+                  textAlign: pw.TextAlign.center,
+                  style: const pw.TextStyle(fontSize: 7),
+                ),
+              if (business.phone != null && business.phone!.isNotEmpty)
+                pw.Text(
+                  'TELP: ${business.phone!}',
+                  textAlign: pw.TextAlign.center,
+                  style: const pw.TextStyle(fontSize: 7),
+                ),
+
+              pw.SizedBox(height: 6),
+              pw.Text('================================', style: const pw.TextStyle(fontSize: 8)),
+              pw.SizedBox(height: 2),
+
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text(DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()), style: const pw.TextStyle(fontSize: 9)),
-                  pw.Text('Ksr: $cashierName', style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text('BON  : $txCode', style: const pw.TextStyle(fontSize: 7.5)),
+                  pw.Text('KSR: ${cashierName.toUpperCase()}', style: const pw.TextStyle(fontSize: 7.5)),
                 ],
               ),
-              pw.Divider(borderStyle: pw.BorderStyle.dashed),
-              
-              if (queueNumber != null) ...[
-                pw.SizedBox(height: 4),
-                pw.Text('ANTRIAN', style: const pw.TextStyle(fontSize: 12)),
-                pw.Text('$queueNumber', style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 4),
-              ],
-              
-              if (tableNumber != null && tableNumber.isNotEmpty) ...[
-                pw.Text('Meja / Pemesan: $tableNumber', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 4),
-              ],
-              
-              if (queueNumber != null || (tableNumber != null && tableNumber.isNotEmpty))
-                pw.Divider(borderStyle: pw.BorderStyle.dashed),
-
-              // Items
-              pw.SizedBox(height: 4),
-              ...items.map((item) {
-                final qty = item['qty'];
-                final price = item['price'];
-                final itemTotal = qty * price;
-                return pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(item['variantName'] != null ? '${item['name']} - ${item['variantName']}' : item['name'], style: const pw.TextStyle(fontSize: 10)),
-                    pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Text('  $qty x ${_formatRupiah(price)}', style: const pw.TextStyle(fontSize: 10)),
-                        pw.Text(_formatRupiah(itemTotal), style: const pw.TextStyle(fontSize: 10)),
-                      ],
-                    ),
-                    pw.SizedBox(height: 2),
-                  ],
-                );
-              }),
-              pw.SizedBox(height: 4),
-              pw.Divider(borderStyle: pw.BorderStyle.dashed),
-              
-              // Ringkasan
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Subtotal', style: const pw.TextStyle(fontSize: 10)),
-                  pw.Text(_formatRupiah(subtotal), style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('TGL  : ${DateFormat('dd-MM-yyyy').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 7.5)),
+                  pw.Text('JAM: ${DateFormat('HH:mm').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 7.5)),
+                ],
+              ),
+
+              if (queueNumber != null) ...[
+                pw.SizedBox(height: 4),
+                pw.Text('NOMOR ANTRIAN', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+                pw.Text('#$queueNumber', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+              ],
+
+              if (tableNumber != null && tableNumber.isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text('MEJA / PEMESAN : ${tableNumber.toUpperCase()}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+              ],
+
+              pw.SizedBox(height: 2),
+              pw.Text('--------------------------------', style: const pw.TextStyle(fontSize: 8)),
+              pw.SizedBox(height: 4),
+
+              // Items List Alfamart Style
+              ...items.map((item) {
+                final qty = item['qty'] ?? 1;
+                final price = item['price'] ?? 0.0;
+                final itemTotal = (qty * price).toDouble();
+                final itemName = '${item['name']}'.toUpperCase();
+                final variant = item['variantName'] != null ? ' - ${item['variantName']}'.toUpperCase() : '';
+
+                return pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        '$itemName$variant',
+                        style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                      ),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text('   $qty x ${_formatRupiah(price)}', style: const pw.TextStyle(fontSize: 7.5)),
+                          pw.Text(_formatRupiah(itemTotal), style: const pw.TextStyle(fontSize: 7.5)),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }),
+
+              pw.SizedBox(height: 4),
+              pw.Text('--------------------------------', style: const pw.TextStyle(fontSize: 8)),
+              pw.SizedBox(height: 2),
+
+              // Summary
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('TOTAL ITEM ($totalItems PCS)', style: const pw.TextStyle(fontSize: 7.5)),
+                  pw.Text(_formatRupiah(subtotal), style: const pw.TextStyle(fontSize: 7.5)),
                 ],
               ),
               if (discount > 0)
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text(discountNotes ?? 'Diskon Promo', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('-${_formatRupiah(discount)}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text((discountNotes ?? 'DISKON PROMO').toUpperCase(), style: const pw.TextStyle(fontSize: 7.5)),
+                    pw.Text('-${_formatRupiah(discount)}', style: const pw.TextStyle(fontSize: 7.5)),
                   ],
                 ),
               if (pointsUsed > 0)
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Potongan Poin', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('-${_formatRupiah(pointsUsed)}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('POTONGAN POIN', style: const pw.TextStyle(fontSize: 7.5)),
+                    pw.Text('-${_formatRupiah(pointsUsed)}', style: const pw.TextStyle(fontSize: 7.5)),
                   ],
                 ),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('PPN (11%)', style: const pw.TextStyle(fontSize: 10)),
-                  pw.Text(_formatRupiah(tax), style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('PPN (11%)', style: const pw.TextStyle(fontSize: 7.5)),
+                  pw.Text(_formatRupiah(tax), style: const pw.TextStyle(fontSize: 7.5)),
                 ],
               ),
-              pw.Divider(borderStyle: pw.BorderStyle.dashed),
+
+              pw.SizedBox(height: 2),
+              pw.Text('================================', style: const pw.TextStyle(fontSize: 8)),
+              pw.SizedBox(height: 2),
+
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('TOTAL', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                  pw.Text(_formatRupiah(total), style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('TOTAL AKHIR', style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Rp ${_formatRupiah(total)}', style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
                 ],
               ),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: 2),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text(paymentMethod == 'QRIS' ? 'Bayar (QRIS)' : (paymentMethod == 'KASBON' ? 'Bayar (Kasbon)' : 'Tunai'), style: const pw.TextStyle(fontSize: 10)),
-                  pw.Text(_formatRupiah(paid), style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('BAYAR (${paymentMethod == 'QRIS' ? 'QRIS' : (paymentMethod == 'KASBON' ? 'KASBON' : 'TUNAI')})', style: const pw.TextStyle(fontSize: 7.5)),
+                  pw.Text('Rp ${_formatRupiah(paid)}', style: const pw.TextStyle(fontSize: 7.5)),
                 ],
               ),
               if (paymentMethod == 'CASH')
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Kembali', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text(_formatRupiah(change), style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('KEMBALI', style: const pw.TextStyle(fontSize: 7.5)),
+                    pw.Text('Rp ${_formatRupiah(change)}', style: const pw.TextStyle(fontSize: 7.5)),
                   ],
                 ),
-              if (paymentMethod == 'KASBON' && dueDate != null) ...[
-                pw.SizedBox(height: 4),
+              if (paymentMethod == 'KASBON' && dueDate != null)
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Jatuh Tempo', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
-                    pw.Text(DateFormat('dd MMM yyyy').format(dueDate), style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
+                    pw.Text('JATUH TEMPO', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
+                    pw.Text(DateFormat('dd-MM-yyyy').format(dueDate), style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
                   ],
                 ),
-              ],
-              
-              pw.SizedBox(height: 8),
-              pw.Divider(borderStyle: pw.BorderStyle.dashed),
+
               pw.SizedBox(height: 4),
-              pw.Text('Harga sudah termasuk pajak', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text('================================', style: const pw.TextStyle(fontSize: 8)),
               pw.SizedBox(height: 4),
-              pw.Text('Terima Kasih Atas Kunjungan Anda', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Barang yang sudah dibeli tidak dapat ditukar/dikembalikan.', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
-              pw.SizedBox(height: 8),
+
+              // Footer Alfamart Style
+              pw.Text('HARGA SUDAH TERMASUK PPN', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 6.5)),
+              pw.SizedBox(height: 2),
+              pw.Text('TERIMA KASIH TELAH BERBELANJA', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+              if (business.phone != null && business.phone!.isNotEmpty)
+                pw.Text('KRITIK & SARAN: SMS/WA ${business.phone}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 6.5)),
+              pw.Text('BARANG YG SUDAH DIBELI TDK DAPAT DITUKAR', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 6)),
+
+              pw.SizedBox(height: 6),
+              pw.BarcodeWidget(
+                barcode: pw.Barcode.code128(),
+                data: txCode,
+                width: paperSize == "80" ? 140 : 100,
+                height: 24,
+                drawText: true,
+                textStyle: const pw.TextStyle(fontSize: 6.5),
+              ),
+              pw.SizedBox(height: 4),
             ],
           );
         },
@@ -277,7 +345,8 @@ class ReceiptPrinterService {
     required double actualCash,
     required double variance,
   }) async {
-    final doc = pw.Document();
+    final theme = await _getReceiptTheme();
+    final doc = pw.Document(theme: theme);
 
     pw.MemoryImage? logoImage;
     if (business.logoBase64 != null && business.logoBase64!.isNotEmpty) {
@@ -642,56 +711,70 @@ class ReceiptPrinterService {
         }
       }
 
-      bytes += generator.text(business.name, styles: const PosStyles(align: PosAlign.center, bold: true));
-      if (business.address != null) bytes += generator.text(business.address!, styles: const PosStyles(align: PosAlign.center));
-      if (business.phone != null) bytes += generator.text('Telp: ${business.phone!}', styles: const PosStyles(align: PosAlign.center));
+      final txCode = 'TRX-${DateFormat('yyMMddHHmm').format(DateTime.now())}';
+      final totalItems = items.fold<int>(0, (sum, item) => sum + ((item['qty'] as num?)?.toInt() ?? 1));
+
+      bytes += generator.text(
+        business.name.toUpperCase(),
+        styles: const PosStyles(align: PosAlign.center, bold: true, width: PosTextSize.size1, height: PosTextSize.size1),
+      );
+      if (business.address != null && business.address!.isNotEmpty) {
+        bytes += generator.text(business.address!.toUpperCase(), styles: const PosStyles(align: PosAlign.center));
+      }
+      if (business.phone != null && business.phone!.isNotEmpty) {
+        bytes += generator.text('TELP: ${business.phone!}', styles: const PosStyles(align: PosAlign.center));
+      }
       
-      bytes += generator.hr();
+      bytes += generator.hr(ch: '=');
       bytes += generator.row([
-        PosColumn(text: DateFormat('dd/MM/yy HH:mm').format(DateTime.now()), width: 6),
-        PosColumn(text: 'Ksr: $cashierName', width: 6, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'BON: $txCode', width: 6),
+        PosColumn(text: 'KSR: ${cashierName.toUpperCase()}', width: 6, styles: const PosStyles(align: PosAlign.right)),
       ]);
-      bytes += generator.hr();
+      bytes += generator.row([
+        PosColumn(text: 'TGL: ${DateFormat('dd-MM-yy').format(DateTime.now())}', width: 6),
+        PosColumn(text: 'JAM: ${DateFormat('HH:mm').format(DateTime.now())}', width: 6, styles: const PosStyles(align: PosAlign.right)),
+      ]);
 
       if (queueNumber != null) {
         bytes += generator.text('ANTRIAN', styles: const PosStyles(align: PosAlign.center, bold: true));
-        bytes += generator.text('$queueNumber', styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
-        bytes += generator.emptyLines(1);
+        bytes += generator.text('#$queueNumber', styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
       }
 
       if (tableNumber != null && tableNumber.isNotEmpty) {
-        bytes += generator.text('Meja/Nama: $tableNumber', styles: const PosStyles(align: PosAlign.center, bold: true));
-        bytes += generator.emptyLines(1);
+        bytes += generator.text('MEJA: ${tableNumber.toUpperCase()}', styles: const PosStyles(align: PosAlign.center, bold: true));
       }
       
-      if (queueNumber != null || (tableNumber != null && tableNumber.isNotEmpty)) {
-        bytes += generator.hr();
-      }
+      bytes += generator.hr(ch: '-');
 
       for (var item in items) {
-        bytes += generator.text(item['variantName'] != null ? '${item['name']} - ${item['variantName']}' : item['name']);
+        final name = (item['variantName'] != null ? '${item['name']} - ${item['variantName']}' : item['name']).toString().toUpperCase();
+        final qty = item['qty'] ?? 1;
+        final price = item['price'] ?? 0.0;
+        final itemTotal = (qty * price).toDouble();
+
+        bytes += generator.text(name, styles: const PosStyles(bold: false));
         bytes += generator.row([
-          PosColumn(text: '  ${item['qty']} x ${_formatRupiah(item['price'])}', width: 7),
-          PosColumn(text: _formatRupiah((item['qty'] * item['price']).toDouble()), width: 5, styles: const PosStyles(align: PosAlign.right)),
+          PosColumn(text: '  $qty x ${_formatRupiah(price)}', width: 7),
+          PosColumn(text: _formatRupiah(itemTotal), width: 5, styles: const PosStyles(align: PosAlign.right)),
         ]);
       }
 
-      bytes += generator.hr();
+      bytes += generator.hr(ch: '-');
       bytes += generator.row([
-        PosColumn(text: 'Subtotal', width: 6),
+        PosColumn(text: 'TOTAL ITEM ($totalItems PCS)', width: 6),
         PosColumn(text: _formatRupiah(subtotal), width: 6, styles: const PosStyles(align: PosAlign.right)),
       ]);
       
       if (discount > 0) {
         bytes += generator.row([
-          PosColumn(text: 'Diskon Promo', width: 6),
+          PosColumn(text: 'DISKON PROMO', width: 6),
           PosColumn(text: '-${_formatRupiah(discount)}', width: 6, styles: const PosStyles(align: PosAlign.right)),
         ]);
       }
       
       if (pointsUsed > 0) {
         bytes += generator.row([
-          PosColumn(text: 'Potongan Poin', width: 6),
+          PosColumn(text: 'POTONGAN POIN', width: 6),
           PosColumn(text: '-${_formatRupiah(pointsUsed)}', width: 6, styles: const PosStyles(align: PosAlign.right)),
         ]);
       }
@@ -700,35 +783,40 @@ class ReceiptPrinterService {
         PosColumn(text: 'PPN (11%)', width: 6),
         PosColumn(text: _formatRupiah(tax), width: 6, styles: const PosStyles(align: PosAlign.right)),
       ]);
-      bytes += generator.hr();
+      bytes += generator.hr(ch: '=');
       
       bytes += generator.row([
-        PosColumn(text: 'TOTAL', width: 6, styles: const PosStyles(bold: true)),
-        PosColumn(text: _formatRupiah(total), width: 6, styles: const PosStyles(bold: true, align: PosAlign.right)),
+        PosColumn(text: 'TOTAL AKHIR', width: 6, styles: const PosStyles(bold: true)),
+        PosColumn(text: 'Rp ${_formatRupiah(total)}', width: 6, styles: const PosStyles(bold: true, align: PosAlign.right)),
       ]);
       bytes += generator.row([
-        PosColumn(text: paymentMethod == 'QRIS' ? 'BAYAR(QRIS)' : (paymentMethod == 'KASBON' ? 'BAYAR(KSBN)' : 'TUNAI'), width: 6),
-        PosColumn(text: _formatRupiah(paid), width: 6, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: paymentMethod == 'QRIS' ? 'BAYAR (QRIS)' : (paymentMethod == 'KASBON' ? 'BAYAR (KSBN)' : 'TUNAI'), width: 6),
+        PosColumn(text: 'Rp ${_formatRupiah(paid)}', width: 6, styles: const PosStyles(align: PosAlign.right)),
       ]);
       
       if (paymentMethod == 'CASH') {
         bytes += generator.row([
           PosColumn(text: 'KEMBALI', width: 6),
-          PosColumn(text: _formatRupiah(change), width: 6, styles: const PosStyles(align: PosAlign.right)),
+          PosColumn(text: 'Rp ${_formatRupiah(change)}', width: 6, styles: const PosStyles(align: PosAlign.right)),
         ]);
       }
 
       if (paymentMethod == 'KASBON' && dueDate != null) {
         bytes += generator.row([
           PosColumn(text: 'JATUH TEMPO', width: 6, styles: const PosStyles(bold: true)),
-          PosColumn(text: DateFormat('dd MMM yyyy').format(dueDate), width: 6, styles: const PosStyles(bold: true, align: PosAlign.right)),
+          PosColumn(text: DateFormat('dd-MM-yyyy').format(dueDate), width: 6, styles: const PosStyles(bold: true, align: PosAlign.right)),
         ]);
       }
       
+      bytes += generator.hr(ch: '=');
+      bytes += generator.text('HARGA SUDAH TERMASUK PPN', styles: const PosStyles(align: PosAlign.center));
+      bytes += generator.text('TERIMA KASIH TELAH BERBELANJA', styles: const PosStyles(align: PosAlign.center, bold: true));
+      if (business.phone != null && business.phone!.isNotEmpty) {
+        bytes += generator.text('KRITIK & SARAN: ${business.phone!}', styles: const PosStyles(align: PosAlign.center));
+      }
+      bytes += generator.text('BARANG YG SUDAH DIBELI TDK DAPAT DITUKAR', styles: const PosStyles(align: PosAlign.center));
       bytes += generator.emptyLines(1);
-      bytes += generator.text('Harga sudah termasuk pajak', styles: const PosStyles(align: PosAlign.center));
-      bytes += generator.text('Terima Kasih Atas Kunjungan Anda', styles: const PosStyles(align: PosAlign.center, bold: true));
-      bytes += generator.text('Brg yg sudah dibeli tdk dapat ditukar', styles: const PosStyles(align: PosAlign.center));
+      bytes += generator.qrcode(txCode, size: QRSize.size3, align: PosAlign.center);
       bytes += generator.emptyLines(2);
       
       if (autoCut) {
