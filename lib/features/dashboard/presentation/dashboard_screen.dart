@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/database.dart';
+import '../../../core/state/report_filter_state.dart';
 
 import '../../pos/data/receipt_printer_service.dart';
 
@@ -16,15 +17,25 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late Stream<List<drift.TypedResult>> _dashboardDataStream;
-  String _selectedFilter = 'Hari Ini';
 
   @override
   void initState() {
     super.initState();
+    ReportFilterState.instance.addListener(_onFilterChanged);
     _dashboardDataStream = (appDb.select(appDb.transactions).join([ 
       drift.leftOuterJoin(appDb.payments, appDb.payments.transactionId.equalsExp(appDb.transactions.id)),
       drift.leftOuterJoin(appDb.users, appDb.users.id.equalsExp(appDb.transactions.userId))
     ])..orderBy([drift.OrderingTerm(expression: appDb.transactions.createdAt, mode: drift.OrderingMode.desc)])).watch();
+  }
+
+  @override
+  void dispose() {
+    ReportFilterState.instance.removeListener(_onFilterChanged);
+    super.dispose();
+  }
+
+  void _onFilterChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -43,31 +54,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           final allTxResults = snapshot.data ?? [];
           
-          final now = DateTime.now();
-          DateTime startDate;
-          DateTime endDate;
-          if (_selectedFilter == 'Hari Ini') {
-            startDate = DateTime(now.year, now.month, now.day);
-            endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
-          } else if (_selectedFilter == 'Kemarin') {
-            final y = now.subtract(const Duration(days: 1));
-            startDate = DateTime(y.year, y.month, y.day);
-            endDate = DateTime(y.year, y.month, y.day, 23, 59, 59);
-          } else if (_selectedFilter == '7 Hari Terakhir') {
-            startDate = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
-            endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
-          } else if (_selectedFilter == '30 Hari Terakhir') {
-            startDate = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
-            endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
-          } else {
-            startDate = DateTime(2000);
-            endDate = DateTime(2100);
-          }
-
+          final range = ReportFilterState.instance.dateRange;
           final filteredResults = allTxResults.where((r) {
+            if (range == null) return true;
             final tx = r.readTable(appDb.transactions);
-            return tx.createdAt.isAfter(startDate.subtract(const Duration(seconds: 1))) && 
-                   tx.createdAt.isBefore(endDate.add(const Duration(seconds: 1)));
+            final start = range.start;
+            final end = range.end.add(const Duration(days: 1));
+            return (tx.createdAt.isAfter(start) || tx.createdAt.isAtSameMomentAs(start)) && 
+                   tx.createdAt.isBefore(end);
           }).toList();
 
           double totalRevenue = 0;
@@ -110,16 +104,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 stream: appDb.select(appDb.debtPayments).watch(),
                 builder: (context, dpSnapshot) {
                   final allExpenses = expSnapshot.data ?? [];
-                  final filteredExpenses = allExpenses.where((e) => 
-                    e.date.isAfter(startDate.subtract(const Duration(seconds: 1))) && 
-                    e.date.isBefore(endDate.add(const Duration(seconds: 1)))
-                  ).toList();
+                  final filteredExpenses = allExpenses.where((e) {
+                    if (range == null) return true;
+                    final start = range.start;
+                    final end = range.end.add(const Duration(days: 1));
+                    return (e.date.isAfter(start) || e.date.isAtSameMomentAs(start)) && 
+                           e.date.isBefore(end);
+                  }).toList();
 
                   final allDebtPayments = dpSnapshot.data ?? [];
-                  final filteredDebtPayments = allDebtPayments.where((dp) => 
-                    dp.date.isAfter(startDate.subtract(const Duration(seconds: 1))) && 
-                    dp.date.isBefore(endDate.add(const Duration(seconds: 1)))
-                  ).toList();
+                  final filteredDebtPayments = allDebtPayments.where((dp) {
+                    if (range == null) return true;
+                    final start = range.start;
+                    final end = range.end.add(const Duration(days: 1));
+                    return (dp.date.isAfter(start) || dp.date.isAtSameMomentAs(start)) && 
+                           dp.date.isBefore(end);
+                  }).toList();
 
                   double totalDebtPayments = 0;
                   for (var dp in filteredDebtPayments) {
@@ -234,13 +234,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    value: _selectedFilter,
+                    value: ReportFilterState.availableFilters.contains(ReportFilterState.instance.currentFilter)
+                        ? ReportFilterState.instance.currentFilter
+                        : null,
+                    hint: Text(
+                      ReportFilterState.instance.displayLabel,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                    ),
                     icon: const Icon(Icons.keyboard_arrow_down, size: 18),
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueAccent),
                     onChanged: (val) {
-                      if (val != null) setState(() => _selectedFilter = val);
+                      if (val != null) {
+                        ReportFilterState.instance.setFilter(val);
+                      }
                     },
-                    items: ['Hari Ini', 'Kemarin', '7 Hari Terakhir', '30 Hari Terakhir', 'Semua Waktu']
+                    items: ReportFilterState.availableFilters
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
                   ),

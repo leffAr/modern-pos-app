@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/database.dart';
+import '../../../core/state/report_filter_state.dart';
 import '../data/export_service.dart';
 import 'package:intl/intl.dart';
 
@@ -13,10 +14,23 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  DateTimeRange? _selectedDateRange = DateTimeRange(
-    start: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day),
-    end: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 23, 59, 59),
-  );
+  @override
+  void initState() {
+    super.initState();
+    ReportFilterState.instance.addListener(_onFilterChanged);
+  }
+
+  @override
+  void dispose() {
+    ReportFilterState.instance.removeListener(_onFilterChanged);
+    super.dispose();
+  }
+
+  void _onFilterChanged() {
+    if (mounted) setState(() {});
+  }
+
+  DateTimeRange? get _selectedDateRange => ReportFilterState.instance.dateRange;
 
   void _pickDateRange() async {
     final picked = await showDateRangePicker(
@@ -30,9 +44,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
 
     if (picked != null) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
+      ReportFilterState.instance.setCustomRange(picked);
     }
   }
 
@@ -44,15 +56,94 @@ class _ReportsScreenState extends State<ReportsScreen> {
         appBar: AppBar(
           title: const Text('Laporan'),
           actions: [
-            TextButton.icon(
-              icon: const Icon(Icons.date_range, color: Colors.white),
-              label: Text(
-                _selectedDateRange != null
-                    ? '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}'
-                    : 'Pilih Tanggal',
-                style: const TextStyle(color: Colors.white),
+            Theme(
+              data: Theme.of(context).copyWith(
+                popupMenuTheme: PopupMenuThemeData(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
-              onPressed: _pickDateRange,
+              child: PopupMenuButton<String>(
+                tooltip: 'Pilih Rentang Waktu',
+                onSelected: (val) {
+                  if (val == 'CUSTOM') {
+                    _pickDateRange();
+                  } else {
+                    ReportFilterState.instance.setFilter(val);
+                  }
+                },
+                itemBuilder: (context) => [
+                  ...ReportFilterState.availableFilters.map((f) => PopupMenuItem(
+                    value: f,
+                    child: Row(
+                      children: [
+                        Icon(
+                          ReportFilterState.instance.currentFilter == f
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          size: 18,
+                          color: ReportFilterState.instance.currentFilter == f ? Colors.blue : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          f,
+                          style: TextStyle(
+                            fontWeight: ReportFilterState.instance.currentFilter == f ? FontWeight.bold : FontWeight.normal,
+                            color: ReportFilterState.instance.currentFilter == f ? Colors.blue : Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'CUSTOM',
+                    child: Row(
+                      children: [
+                        Icon(
+                          ReportFilterState.instance.currentFilter == 'Kustom'
+                              ? Icons.check_circle
+                              : Icons.calendar_month,
+                          size: 18,
+                          color: ReportFilterState.instance.currentFilter == 'Kustom' ? Colors.blue : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          ReportFilterState.instance.currentFilter == 'Kustom'
+                              ? 'Kustom (${ReportFilterState.instance.displayLabel})'
+                              : 'Pilih Tanggal Kustom...',
+                          style: TextStyle(
+                            fontWeight: ReportFilterState.instance.currentFilter == 'Kustom' ? FontWeight.bold : FontWeight.normal,
+                            color: ReportFilterState.instance.currentFilter == 'Kustom' ? Colors.blue : Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.date_range, color: Colors.white, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        ReportFilterState.instance.displayLabel,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_drop_down, color: Colors.white, size: 18),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
           bottom: const TabBar(
@@ -66,7 +157,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         body: TabBarView(
           children: [
             _SalesReportView(dateRange: _selectedDateRange),
-            const _ProductReportView(),
+            _ProductReportView(dateRange: _selectedDateRange),
             _ProfitReportView(dateRange: _selectedDateRange),
           ],
         ),

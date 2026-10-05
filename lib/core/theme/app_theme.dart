@@ -37,7 +37,7 @@ class AppTheme {
         centerTitle: false,
         iconTheme: IconThemeData(color: textPrimaryColor),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0, // Flat design with custom shadow
         shape: RoundedRectangleBorder(
