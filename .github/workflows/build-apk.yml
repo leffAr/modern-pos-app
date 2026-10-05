@@ -32,10 +32,10 @@ jobs:
 
       - name: Patch all plugins build.gradle
         run: |
-          find ~/.pub-cache -name "build.gradle" -exec sed -i 's/compileSdk flutter.compileSdkVersion/compileSdkVersion 35/g' {} +
+          find ~/.pub-cache -name "build.gradle" -exec sed -i -E 's/compileSdk(Version)? (= )?flutter.compileSdkVersion/compileSdkVersion 35/g' {} +
 
       - name: Build APK
-        run: flutter build apk --release -v > build_log.txt 2>&1
+        run: flutter build apk --release 2>&1 | tee build_log.txt
 
       - name: Upload Build Log
         if: always()
