@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import '../../../core/database/database.dart';
 import '../../../core/utils/web_image_picker.dart';
 import '../../pos/data/receipt_printer_service.dart';
+import '../../pos/presentation/scanner_screen.dart';
 
 
 class ProductsScreen extends StatefulWidget {
@@ -228,10 +229,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         Expanded(
                           child: TextField(
                             controller: skuCtrl,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: "SKU",
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.qr_code),
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.qr_code),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
+                                tooltip: "Scan SKU",
+                                onPressed: () async {
+                                  final code = await Navigator.push<String>(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const ScannerScreen()),
+                                  );
+                                  if (code != null && code.isNotEmpty) {
+                                    setDialogState(() {
+                                      skuCtrl.text = code;
+                                    });
+                                  }
+                                },
+                              ),
                             ),
                           ),
                         ),
@@ -239,10 +255,28 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         Expanded(
                           child: TextField(
                             controller: barcodeCtrl,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: "Barcode",
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.barcode_reader),
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.barcode_reader),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
+                                tooltip: "Scan Barcode Produk",
+                                onPressed: () async {
+                                  final code = await Navigator.push<String>(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const ScannerScreen()),
+                                  );
+                                  if (code != null && code.isNotEmpty) {
+                                    setDialogState(() {
+                                      barcodeCtrl.text = code;
+                                      if (skuCtrl.text.isEmpty) {
+                                        skuCtrl.text = code;
+                                      }
+                                    });
+                                  }
+                                },
+                              ),
                             ),
                           ),
                         ),
@@ -952,7 +986,22 @@ class _ProductSearchDelegate extends SearchDelegate<String> {
 
   @override
   List<Widget>? buildActions(BuildContext context) {
-    return [IconButton(icon: const Icon(Icons.clear), onPressed: () => query = '')];
+    return [
+      IconButton(
+        icon: const Icon(Icons.qr_code_scanner),
+        tooltip: 'Scan Barcode',
+        onPressed: () async {
+          final code = await Navigator.push<String>(
+            context,
+            MaterialPageRoute(builder: (context) => const ScannerScreen()),
+          );
+          if (code != null && code.isNotEmpty) {
+            query = code;
+          }
+        },
+      ),
+      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+    ];
   }
 
   @override
