@@ -344,6 +344,9 @@ class ReceiptPrinterService {
     required double expectedCash,
     required double actualCash,
     required double variance,
+    double totalExpenses = 0.0,
+    double totalDebtPayments = 0.0,
+    String? notes,
   }) async {
     final theme = await _getReceiptTheme();
     final doc = pw.Document(theme: theme);
@@ -426,6 +429,22 @@ class ReceiptPrinterService {
                   pw.Text(_formatRupiah(totalCashSales), style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
+              if (totalDebtPayments > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Bayar Piutang (+):', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(_formatRupiah(totalDebtPayments), style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+              if (totalExpenses > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Kas Keluar / Beban (-):', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('-${_formatRupiah(totalExpenses)}', style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -453,10 +472,32 @@ class ReceiptPrinterService {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Selisih (Kurang/Lebih):', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-                  pw.Text(_formatRupiah(variance), style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Selisih Kas:', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(
+                    variance == 0
+                        ? 'Rp 0 (PAS)'
+                        : (variance > 0
+                            ? '+${_formatRupiah(variance)} (LEBIH)'
+                            : '-${_formatRupiah(variance.abs())} (MINES)'),
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
                 ],
               ),
+              if (notes != null && notes.trim().isNotEmpty) ...[
+                pw.SizedBox(height: 6),
+                pw.Divider(borderStyle: pw.BorderStyle.dashed),
+                pw.Align(
+                  alignment: pw.Alignment.centerLeft,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('KETERANGAN KASIR:', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 2),
+                      pw.Text(notes.trim(), style: const pw.TextStyle(fontSize: 8.5)),
+                    ],
+                  ),
+                ),
+              ],
               
               pw.SizedBox(height: 16),
               pw.Text('Dicetak: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 8)),
