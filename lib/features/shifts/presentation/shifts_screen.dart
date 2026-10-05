@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/database.dart';
+import '../../../core/state/report_filter_state.dart';
+import '../../reports/data/export_service.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -28,11 +30,16 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
   @override
   void initState() {
     super.initState();
+    ReportFilterState.instance.addListener(_onFilterChanged);
     if (widget.userRole == 'Admin') {
       _adminShiftsStream = (appDb.select(appDb.shifts)..orderBy([(t) => drift.OrderingTerm.desc(t.openedAt)])).watch();
     } else {
       _loadCashierData();
     }
+  }
+
+  void _onFilterChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadCashierData() async {
@@ -48,9 +55,103 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
 
   @override
   void dispose() {
+    ReportFilterState.instance.removeListener(_onFilterChanged);
     _openCashCtrl.dispose();
     _closeCashCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _exportShiftsPdf(BuildContext context) async {
+    final range = ReportFilterState.instance.dateRange;
+    final allShifts = await (appDb.select(appDb.shifts)..orderBy([(t) => drift.OrderingTerm.desc(t.openedAt)])).get();
+
+    final filteredShifts = allShifts.where((s) {
+      if (range == null) return true;
+      final start = range.start;
+      final end = range.end.add(const Duration(days: 1));
+      return (s.openedAt.isAfter(start) || s.openedAt.isAtSameMomentAs(start)) && s.openedAt.isBefore(end);
+    }).toList();
+
+    if (filteredShifts.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak ada data shift pada periode ini untuk diexport!')),
+        );
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Menyiapkan file PDF Laporan Shift...')),
+      );
+    }
+
+    final business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull() ??
+        const Business(
+          id: 'BIZ-1',
+          name: 'MODERN POS',
+          address: '',
+          phone: '',
+          logoBase64: null,
+          taxPercentage: 0.0,
+          enableTableNumber: false,
+          enableQueueNumber: false,
+        );
+
+    final allUsers = await appDb.select(appDb.users).get();
+    final userMap = {for (var u in allUsers) u.id: u.name};
+
+    double totalOpeningCash = 0;
+    double totalClosingCash = 0;
+    double totalVariance = 0;
+
+    final List<List<String>> tableData = [];
+
+    for (var shift in filteredShifts) {
+      final isClosed = shift.status == 'CLOSED';
+      double selisih = 0;
+      if (isClosed && shift.closingCash != null && shift.expectedCash != null) {
+        selisih = shift.closingCash! - shift.expectedCash!;
+      }
+
+      totalOpeningCash += shift.openingCash;
+      if (shift.closingCash != null) {
+        totalClosingCash += shift.closingCash!;
+      }
+      totalVariance += selisih;
+
+      final cashierName = userMap[shift.userId] ?? shift.userId;
+      final openedStr = DateFormat('dd/MM HH:mm').format(shift.openedAt);
+      final closedStr = shift.closedAt != null ? DateFormat('dd/MM HH:mm').format(shift.closedAt!) : '-';
+      final openCashStr = 'Rp ${formatter.format(shift.openingCash.toInt())}';
+      final closeCashStr = shift.closingCash != null ? 'Rp ${formatter.format(shift.closingCash!.toInt())}' : '-';
+      final selisihStr = !isClosed
+          ? 'Berlangsung'
+          : (selisih == 0 ? 'Sesuai' : (selisih > 0 ? '+Rp ${formatter.format(selisih.toInt())}' : '-Rp ${formatter.format(selisih.abs().toInt())}'));
+
+      tableData.add([
+        shift.shiftName,
+        cashierName,
+        openedStr,
+        closedStr,
+        openCashStr,
+        closeCashStr,
+        selisihStr,
+        isClosed ? 'Ditutup' : 'Buka',
+      ]);
+    }
+
+    await ExportService.exportShiftReportPdf(
+      businessName: business.name,
+      period: ReportFilterState.instance.displayLabel,
+      headers: ['Shift', 'Kasir', 'Buka', 'Tutup', 'Modal Awal', 'Kas Akhir', 'Selisih', 'Status'],
+      data: tableData,
+      totalShifts: filteredShifts.length,
+      totalOpeningCash: totalOpeningCash,
+      totalClosingCash: totalClosingCash,
+      totalVariance: totalVariance,
+    );
   }
 
   final formatter = NumberFormat('#,###', 'id_ID');
@@ -65,99 +166,315 @@ class _ShiftsScreenState extends State<ShiftsScreen> {
   }
 
   Widget _buildAdminView() {
+    final range = ReportFilterState.instance.dateRange;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Laporan Shift & Kas')),
+      appBar: AppBar(
+        title: const Text('Laporan Shift & Kas'),
+        actions: [
+          Theme(
+            data: Theme.of(context).copyWith(
+              popupMenuTheme: PopupMenuThemeData(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            child: PopupMenuButton<String>(
+              tooltip: 'Pilih Rentang Waktu',
+              onSelected: (val) async {
+                if (val == 'CUSTOM') {
+                  final picked = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now(),
+                    initialDateRange: range ?? DateTimeRange(
+                      start: DateTime.now().subtract(const Duration(days: 30)),
+                      end: DateTime.now(),
+                    ),
+                  );
+                  if (picked != null) {
+                    ReportFilterState.instance.setCustomRange(picked);
+                  }
+                } else {
+                  ReportFilterState.instance.setFilter(val);
+                }
+              },
+              itemBuilder: (context) => [
+                ...ReportFilterState.availableFilters.map((f) => PopupMenuItem(
+                  value: f,
+                  child: Row(
+                    children: [
+                      Icon(
+                        ReportFilterState.instance.currentFilter == f
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        size: 18,
+                        color: ReportFilterState.instance.currentFilter == f ? Colors.blue : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        f,
+                        style: TextStyle(
+                          fontWeight: ReportFilterState.instance.currentFilter == f ? FontWeight.bold : FontWeight.normal,
+                          color: ReportFilterState.instance.currentFilter == f ? Colors.blue : Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'CUSTOM',
+                  child: Row(
+                    children: [
+                      Icon(
+                        ReportFilterState.instance.currentFilter == 'Kustom'
+                            ? Icons.check_circle
+                            : Icons.calendar_month,
+                        size: 18,
+                        color: ReportFilterState.instance.currentFilter == 'Kustom' ? Colors.blue : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        ReportFilterState.instance.currentFilter == 'Kustom'
+                            ? 'Kustom (${ReportFilterState.instance.displayLabel})'
+                            : 'Pilih Tanggal Kustom...',
+                        style: TextStyle(
+                          fontWeight: ReportFilterState.instance.currentFilter == 'Kustom' ? FontWeight.bold : FontWeight.normal,
+                          color: ReportFilterState.instance.currentFilter == 'Kustom' ? Colors.blue : Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.date_range, color: Colors.white, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      ReportFilterState.instance.displayLabel,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_drop_down, color: Colors.white, size: 16),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+            tooltip: 'Export Laporan Shift ke PDF',
+            onPressed: () => _exportShiftsPdf(context),
+          ),
+        ],
+      ),
       body: StreamBuilder<List<Shift>>(
         stream: _adminShiftsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-          final shifts = snapshot.data ?? [];
+          final allShifts = snapshot.data ?? [];
+
+          final shifts = allShifts.where((s) {
+            if (range == null) return true;
+            final start = range.start;
+            final end = range.end.add(const Duration(days: 1));
+            return (s.openedAt.isAfter(start) || s.openedAt.isAtSameMomentAs(start)) && s.openedAt.isBefore(end);
+          }).toList();
           
           if (shifts.isEmpty) {
-            return const Center(child: Text('Belum ada data shift.'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history_toggle_off, size: 70, color: Colors.grey.shade400),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Belum ada data shift untuk periode ${ReportFilterState.instance.displayLabel}.',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ubah periode tanggal di atas untuk melihat riwayat shift lainnya.',
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                  ),
+                ],
+              ),
+            );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: shifts.length,
-            itemBuilder: (context, index) {
-              final shift = shifts[index];
-              final isClosed = shift.status == 'CLOSED';
-              
-              double selisih = 0;
-              if (isClosed && shift.closingCash != null && shift.expectedCash != null) {
-                selisih = shift.closingCash! - shift.expectedCash!;
-              }
+          double totalOpening = 0;
+          double totalClosing = 0;
+          double totalSelisih = 0;
+          for (var s in shifts) {
+            totalOpening += s.openingCash;
+            if (s.closingCash != null) totalClosing += s.closingCash!;
+            if (s.closingCash != null && s.expectedCash != null) {
+              totalSelisih += (s.closingCash! - s.expectedCash!);
+            }
+          }
 
-              return Card(
-                child: ExpansionTile(
-                  leading: Icon(
-                    isClosed ? Icons.lock : Icons.lock_open,
-                    color: isClosed ? Colors.grey : Colors.green,
-                  ),
-                  title: Text('${shift.shiftName} - ${shift.userId} (${DateFormat('dd MMM, HH:mm').format(shift.openedAt)})'),
-                  subtitle: Text(
-                    isClosed 
-                      ? (selisih == 0 ? 'Sesuai' : (selisih > 0 ? 'Lebih: Rp ${formatter.format(selisih)}' : 'Kurang: Rp ${formatter.format(selisih.abs())}'))
-                      : 'Sedang Berlangsung',
-                    style: TextStyle(
-                      color: isClosed ? (selisih == 0 ? Colors.green : Colors.red) : Colors.orange,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+          return Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),
+                  ],
+                ),
+                child: Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDetailRow('Kas Awal', 'Rp ${formatter.format(shift.openingCash)}'),
-                          if (isClosed) ...[
-                            const Divider(),
-                            _buildDetailRow('Kas Akhir (Seharusnya)', 'Rp ${formatter.format(shift.expectedCash ?? 0)}'),
-                            _buildDetailRow('Kas Akhir (Fisik Laci)', 'Rp ${formatter.format(shift.closingCash ?? 0)}'),
-                            const SizedBox(height: 8),
-                            _buildDetailRow('Selisih', 'Rp ${formatter.format(selisih)}', color: selisih == 0 ? Colors.green : Colors.red),
-                            const SizedBox(height: 8),
-                            Text('Ditutup pada: ${DateFormat('dd MMM yyyy, HH:mm').format(shift.closedAt!)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                            const SizedBox(height: 16),
-                            OutlinedButton.icon(
-                              icon: const Icon(Icons.print, size: 18),
-                              label: const Text('Cetak Laporan Shift'),
-                              onPressed: () async {
-                                // Fetch business details
-                                final business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull() ?? 
-                                   const Business(id: 'BIZ-1', name: 'MODERN POS', address: '', phone: '', logoBase64: null, taxPercentage: 0.0, enableTableNumber: false, enableQueueNumber: false);
-                                
-                                final kasirUser = await (appDb.select(appDb.users)..where((u) => u.id.equals(shift.userId))).getSingleOrNull();
-                                final cashierRealName = kasirUser?.name ?? shift.userId;
-
-                                await ReceiptPrinterService.printShiftReport(
-                                  business: business,
-                                  shiftName: shift.shiftName,
-                                  cashierName: cashierRealName,
-                                  openedAt: shift.openedAt,
-                                  closedAt: shift.closedAt!,
-                                  openingCash: shift.openingCash,
-                                  totalCashSales: 0.0, // Simplify for reprint, or compute it again
-                                  totalQrisSales: 0.0,
-                                  expectedCash: shift.expectedCash ?? 0.0,
-                                  actualCash: shift.closingCash ?? 0.0,
-                                  variance: selisih,
-                                );
-                              },
-                            ),
-                          ]
-                        ],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Periode: ${ReportFilterState.instance.displayLabel}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            const SizedBox(height: 2),
+                            Text('Ditemukan: ${shifts.length} sesi shift', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          ],
+                        ),
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.red.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          ),
+                          icon: const Icon(Icons.picture_as_pdf, size: 18),
+                          label: const Text('Export PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          onPressed: () => _exportShiftsPdf(context),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStatColumn('Total Modal Awal', 'Rp ${formatter.format(totalOpening.toInt())}', Colors.blue.shade700),
+                        _buildStatColumn('Total Fisik Akhir', 'Rp ${formatter.format(totalClosing.toInt())}', Colors.green.shade700),
+                        _buildStatColumn(
+                          'Total Selisih',
+                          totalSelisih == 0
+                              ? 'Rp 0'
+                              : (totalSelisih > 0 ? '+Rp ${formatter.format(totalSelisih.toInt())}' : '-Rp ${formatter.format(totalSelisih.abs().toInt())}'),
+                          totalSelisih == 0 ? Colors.green.shade700 : (totalSelisih > 0 ? Colors.blue.shade700 : Colors.red.shade700),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              );
-            },
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: shifts.length,
+                  itemBuilder: (context, index) {
+                    final shift = shifts[index];
+                    final isClosed = shift.status == 'CLOSED';
+                    
+                    double selisih = 0;
+                    if (isClosed && shift.closingCash != null && shift.expectedCash != null) {
+                      selisih = shift.closingCash! - shift.expectedCash!;
+                    }
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ExpansionTile(
+                        leading: Icon(
+                          isClosed ? Icons.lock : Icons.lock_open,
+                          color: isClosed ? Colors.grey : Colors.green,
+                        ),
+                        title: Text('${shift.shiftName} - ${shift.userId} (${DateFormat('dd MMM, HH:mm').format(shift.openedAt)})'),
+                        subtitle: Text(
+                          isClosed 
+                            ? (selisih == 0 ? 'Sesuai' : (selisih > 0 ? 'Lebih: Rp ${formatter.format(selisih.toInt())}' : 'Kurang: Rp ${formatter.format(selisih.abs().toInt())}'))
+                            : 'Sedang Berlangsung',
+                          style: TextStyle(
+                            color: isClosed ? (selisih == 0 ? Colors.green : Colors.red) : Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildDetailRow('Kas Awal', 'Rp ${formatter.format(shift.openingCash)}'),
+                                if (isClosed) ...[
+                                  const Divider(),
+                                  _buildDetailRow('Kas Akhir (Seharusnya)', 'Rp ${formatter.format(shift.expectedCash ?? 0)}'),
+                                  _buildDetailRow('Kas Akhir (Fisik Laci)', 'Rp ${formatter.format(shift.closingCash ?? 0)}'),
+                                  const SizedBox(height: 8),
+                                  _buildDetailRow('Selisih', 'Rp ${formatter.format(selisih)}', color: selisih == 0 ? Colors.green : Colors.red),
+                                  const SizedBox(height: 8),
+                                  Text('Ditutup pada: ${DateFormat('dd MMM yyyy, HH:mm').format(shift.closedAt!)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                  const SizedBox(height: 16),
+                                  OutlinedButton.icon(
+                                    icon: const Icon(Icons.print, size: 18),
+                                    label: const Text('Cetak Laporan Shift'),
+                                    onPressed: () async {
+                                      final business = await (appDb.select(appDb.businesses)..limit(1)).getSingleOrNull() ?? 
+                                         const Business(id: 'BIZ-1', name: 'MODERN POS', address: '', phone: '', logoBase64: null, taxPercentage: 0.0, enableTableNumber: false, enableQueueNumber: false);
+                                      
+                                      final kasirUser = await (appDb.select(appDb.users)..where((u) => u.id.equals(shift.userId))).getSingleOrNull();
+                                      final cashierRealName = kasirUser?.name ?? shift.userId;
+
+                                      await ReceiptPrinterService.printShiftReport(
+                                        business: business,
+                                        shiftName: shift.shiftName,
+                                        cashierName: cashierRealName,
+                                        openedAt: shift.openedAt,
+                                        closedAt: shift.closedAt!,
+                                        openingCash: shift.openingCash,
+                                        totalCashSales: 0.0,
+                                        totalQrisSales: 0.0,
+                                        expectedCash: shift.expectedCash ?? 0.0,
+                                        actualCash: shift.closingCash ?? 0.0,
+                                        variance: selisih,
+                                      );
+                                    },
+                                  ),
+                                ]
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildStatColumn(String title, String value, Color color) {
+    return Column(
+      children: [
+        Text(title, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        const SizedBox(height: 4),
+        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+      ],
     );
   }
 

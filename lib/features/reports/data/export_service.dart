@@ -49,6 +49,118 @@ class ExportService {
     );
   }
 
+  /// Generate and preview Shift Report PDF with professional formatting & summary cards
+  static Future<void> exportShiftReportPdf({
+    required String businessName,
+    required String period,
+    required List<List<String>> data,
+    required List<String> headers,
+    required int totalShifts,
+    required double totalOpeningCash,
+    required double totalClosingCash,
+    required double totalVariance,
+  }) async {
+    final doc = pw.Document();
+    final fmt = NumberFormat('#,###', 'id_ID');
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(businessName, style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey900)),
+                    pw.SizedBox(height: 4),
+                    pw.Text('LAPORAN SHIFT & KAS KASIR', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey700)),
+                    pw.Text('Periode: $period', style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('Dicetak: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+                    pw.Text('Total Shift: $totalShifts', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey800)),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 14),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                border: pw.Border.all(color: PdfColors.grey300),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                children: [
+                  pw.Column(
+                    children: [
+                      pw.Text('Total Modal Awal', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                      pw.SizedBox(height: 4),
+                      pw.Text('Rp ${fmt.format(totalOpeningCash.toInt())}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+                    ],
+                  ),
+                  pw.Column(
+                    children: [
+                      pw.Text('Total Kas Fisik Akhir', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                      pw.SizedBox(height: 4),
+                      pw.Text('Rp ${fmt.format(totalClosingCash.toInt())}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.green800)),
+                    ],
+                  ),
+                  pw.Column(
+                    children: [
+                      pw.Text('Total Selisih (Laci)', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        totalVariance == 0
+                            ? 'Rp 0'
+                            : (totalVariance > 0
+                                ? '+Rp ${fmt.format(totalVariance.toInt())}'
+                                : '-Rp ${fmt.format(totalVariance.abs().toInt())}'),
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                          color: totalVariance == 0
+                              ? PdfColors.green800
+                              : (totalVariance > 0 ? PdfColors.blue800 : PdfColors.red800),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 18),
+            pw.Table.fromTextArray(
+              headers: headers,
+              data: data,
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 10),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
+              headerAlignment: pw.Alignment.centerLeft,
+              cellStyle: const pw.TextStyle(fontSize: 9),
+              cellAlignment: pw.Alignment.centerLeft,
+              rowDecoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
+            ),
+          ];
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => doc.save(),
+      name: 'Laporan_Shift_${period.replaceAll(' ', '_')}.pdf',
+    );
+  }
+
   /// Generate and save Excel (.xlsx) Report
   static Future<String?> exportToExcel({
     required String title,
