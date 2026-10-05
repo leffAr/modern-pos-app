@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:audioplayers/audioplayers.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/database/database.dart';
 import 'package:drift/drift.dart' as drift;
 import '../data/receipt_printer_service.dart';
@@ -122,7 +122,7 @@ class _POSScreenState extends State<POSScreen> {
   }
 
   Future<void> _processBarcode(String barcode) async {
-    AudioPlayer().play(AssetSource('audio/beep.wav'));
+    await SoundService.playBeep();
     final product = await (appDb.select(appDb.products)..where((p) => p.barcode.equals(barcode))).getSingleOrNull();
     if (product != null) {
       _addToCart(product);

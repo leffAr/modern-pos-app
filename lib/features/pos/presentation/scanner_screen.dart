@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:audioplayers/audioplayers.dart';
+import '../../../core/services/sound_service.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -13,12 +13,25 @@ class _ScannerScreenState extends State<ScannerScreen> {
   final MobileScannerController _cameraController = MobileScannerController();
   final _manualInputController = TextEditingController();
   bool _hasPopped = false;
+  bool _isScanned = false;
 
   @override
   void dispose() {
     _cameraController.dispose();
     _manualInputController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleManualSubmit(String val) async {
+    if (_hasPopped) return;
+    final code = val.trim();
+    if (code.isNotEmpty) {
+      _hasPopped = true;
+      await SoundService.playBeep();
+      if (mounted) {
+        Navigator.pop(context, code);
+      }
+    }
   }
 
   @override
@@ -29,10 +42,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
         actions: [
           IconButton(
             color: Colors.white,
-            icon: ValueListenableBuilder(
+            icon: ValueListenableBuilder<TorchState>(
               valueListenable: _cameraController.torchState,
               builder: (context, state, child) {
-                switch (state as TorchState) {
+                switch (state) {
                   case TorchState.off:
                     return const Icon(Icons.flash_off, color: Colors.grey);
                   case TorchState.on:
@@ -45,10 +58,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
           IconButton(
             color: Colors.white,
-            icon: ValueListenableBuilder(
+            icon: ValueListenableBuilder<CameraFacing>(
               valueListenable: _cameraController.cameraFacingState,
               builder: (context, state, child) {
-                switch (state as CameraFacing) {
+                switch (state) {
                   case CameraFacing.front:
                     return const Icon(Icons.camera_front);
                   case CameraFacing.back:
@@ -69,14 +82,30 @@ class _ScannerScreenState extends State<ScannerScreen> {
               children: [
                 MobileScanner(
                   controller: _cameraController,
-                  onDetect: (capture) {
+                  onDetect: (capture) async {
                     if (_hasPopped) return;
                     final List<Barcode> barcodes = capture.barcodes;
                     if (barcodes.isNotEmpty) {
                       final String code = barcodes.first.rawValue ?? '';
                       if (code.isNotEmpty) {
-                        AudioPlayer().play(AssetSource('audio/beep.wav'));
                         _hasPopped = true;
+                        try {
+                          await _cameraController.stop();
+                        } catch (_) {}
+
+                        // Mainkan suara beep scan QR & haptic feedback
+                        await SoundService.playBeep();
+
+                        if (mounted) {
+                          setState(() {
+                            _isScanned = true;
+                          });
+                        }
+
+                        // Beri jeda singkat agar suara terdengar jelas dan visual tampak
+                        await Future.delayed(const Duration(milliseconds: 180));
+
+                        if (!context.mounted) return;
                         Navigator.pop(context, code);
                       }
                     }
@@ -88,9 +117,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     width: 250,
                     height: 250,
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.redAccent, width: 3),
+                      border: Border.all(
+                        color: _isScanned ? Colors.greenAccent : Colors.redAccent,
+                        width: 3,
+                      ),
                       borderRadius: BorderRadius.circular(12),
+                      color: _isScanned ? Colors.green.withOpacity(0.15) : Colors.transparent,
                     ),
+                    child: _isScanned
+                        ? const Center(
+                            child: Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 64),
+                          )
+                        : null,
                   ),
                 ),
               ],
@@ -113,22 +151,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.check_circle, color: Colors.green),
-                        onPressed: () {
-                          if (_hasPopped) return;
-                          if (_manualInputController.text.isNotEmpty) {
-                            _hasPopped = true;
-                            Navigator.pop(context, _manualInputController.text);
-                          }
-                        },
+                        onPressed: () => _handleManualSubmit(_manualInputController.text),
                       ),
                     ),
-                    onSubmitted: (val) {
-                      if (_hasPopped) return;
-                      if (val.isNotEmpty) {
-                        _hasPopped = true;
-                        Navigator.pop(context, val);
-                      }
-                    },
+                    onSubmitted: (val) => _handleManualSubmit(val),
                   ),
                 ],
               ),

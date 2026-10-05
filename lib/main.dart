@@ -7,12 +7,16 @@ import 'features/splash/presentation/splash_screen.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/database/database.dart';
+import 'core/services/sound_service.dart';
 import 'package:drift/drift.dart' as drift;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
   
+  // Inisialisasi audio sound scanner di background
+  SoundService.init();
+
   // Migrate old buggy data without blocking UI
   Future.microtask(() async {
     try {
