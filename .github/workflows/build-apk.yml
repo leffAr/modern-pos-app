@@ -37,7 +37,9 @@ jobs:
           find ~/.pub-cache -name "build.gradle" -exec sed -i -E 's/compileSdk(Version)? (= )?flutter.compileSdkVersion/compileSdkVersion 35/g' {} +
 
       - name: Build APK
-        run: flutter build apk --release 2>&1 | tee build_log.txt
+        run: |
+          set -o pipefail
+          flutter build apk --release --android-skip-build-dependency-validation 2>&1 | tee build_log.txt
 
       - name: Upload Build Log
         if: always()
@@ -50,19 +52,20 @@ jobs:
         if: success()
         run: |
           mkdir -p output_apk
-          APK_FILE=$(find build/app/outputs -type f -name "*.apk" 2>/dev/null | head -n 1)
+          echo "Searching for APKs..."
+          find build/ -name "*.apk"
+          APK_FILE=$(find build/ -name "*release*.apk" 2>/dev/null | head -n 1)
           if [ -z "$APK_FILE" ]; then
-            APK_FILE=$(find build -type f -name "*.apk" 2>/dev/null | head -n 1)
+            APK_FILE=$(find build/ -name "*.apk" 2>/dev/null | head -n 1)
           fi
-          echo "Found APK: $APK_FILE"
+          echo "Selected APK: $APK_FILE"
           if [ -n "$APK_FILE" ] && [ -f "$APK_FILE" ]; then
             cp -v "$APK_FILE" output_apk/Modern_POS.apk
           else
             echo "Error: No APK file found in build directory!"
-            find build -maxdepth 5
             exit 1
           fi
-          ls -lh output_apk/
+          ls -lh output_apk/Modern_POS.apk
 
       - name: Upload APK Artifact
         if: success()
@@ -81,7 +84,7 @@ jobs:
           name: "Release v1.3.2 - Modern POS"
           body: |
             ### Fitur Baru v1.3.2
-            - **Rincian Total Kas Laci Otomatis**: Perhitungan otomatis kas yang seharusnya ada di laci saat tutup shift.
+            - **Rincian Total Kas Laci Otomatis**: Perhitungan otomatis kas yang seharusnya ada di laci saat tutup shift (Modal + Penjualan Tunai + Pelunasan Piutang - Pengeluaran).
             - **Indikator Selisih Minus**: Menghitung selisih kas fisik vs kas sistem secara real-time (Minus/Lebih/Pas).
             - **Keterangan / Catatan Kasir**: Input catatan alasan selisih kas saat tutup shift.
             - **Struk Thermal & Laporan Kasir**: Catatan dan rincian kas tercetak di struk thermal, laporan PDF, dan ringkasan WhatsApp.
