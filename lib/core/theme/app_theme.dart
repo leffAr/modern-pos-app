@@ -30,6 +30,15 @@ class AppTheme {
         bodyLarge: GoogleFonts.plusJakartaSans(color: textPrimaryColor),
         bodyMedium: GoogleFonts.plusJakartaSans(color: textSecondaryColor),
       ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentTextStyle: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+        elevation: 6,
+        showCloseIcon: true,
+        closeIconColor: Colors.white70,
+        backgroundColor: const Color(0xFF1F2937), // Gray 800 default
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: surfaceColor,
         foregroundColor: textPrimaryColor,

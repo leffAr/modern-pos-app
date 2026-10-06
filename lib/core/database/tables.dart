@@ -79,6 +79,8 @@ class Categories extends Table {
 }
 
 @DataClassName('Product')
+@TableIndex(name: 'product_sku_idx', columns: {#sku})
+@TableIndex(name: 'product_barcode_idx', columns: {#barcode})
 class Products extends Table {
   TextColumn get id => text()(); // UUID
   TextColumn get businessId => text().references(Businesses, #id)();
@@ -167,6 +169,8 @@ class Promos extends Table {
 // --- TRANSACTION TABLES ---
 
 @DataClassName('Transaction')
+@TableIndex(name: 'trx_date_idx', columns: {#createdAt})
+@TableIndex(name: 'trx_receipt_idx', columns: {#receiptNumber})
 class Transactions extends Table {
   TextColumn get id => text()(); // UUID
   TextColumn get branchId => text().references(Branches, #id)();
@@ -191,6 +195,7 @@ class Transactions extends Table {
 }
 
 @DataClassName('TransactionItem')
+@TableIndex(name: 'trx_item_trxid_idx', columns: {#transactionId})
 class TransactionItems extends Table {
   TextColumn get id => text()(); // UUID
   TextColumn get transactionId => text().references(Transactions, #id)();

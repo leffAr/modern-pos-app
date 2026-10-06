@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:fl_chart/fl_chart.dart';
 import '../../../core/database/database.dart';
 import '../../../core/state/report_filter_state.dart';
 
@@ -17,6 +18,9 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late Stream<List<drift.TypedResult>> _dashboardDataStream;
+  late Stream<List<Expense>> _expensesStream;
+  late Stream<List<DebtPayment>> _debtPaymentsStream;
+  late Stream<List<drift.TypedResult>> _lowStockStream;
 
   @override
   void initState() {
@@ -26,6 +30,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       drift.leftOuterJoin(appDb.payments, appDb.payments.transactionId.equalsExp(appDb.transactions.id)),
       drift.leftOuterJoin(appDb.users, appDb.users.id.equalsExp(appDb.transactions.userId))
     ])..orderBy([drift.OrderingTerm(expression: appDb.transactions.createdAt, mode: drift.OrderingMode.desc)])).watch();
+    
+    _expensesStream = appDb.select(appDb.expenses).watch();
+    _debtPaymentsStream = appDb.select(appDb.debtPayments).watch();
+    _lowStockStream = (appDb.select(appDb.inventory).join([
+      drift.innerJoin(appDb.products, appDb.products.id.equalsExp(appDb.inventory.productId))
+    ])..where(drift.CustomExpression<bool>('inventory.stock <= inventory.minimum_stock'))).watch();
   }
 
   @override
@@ -98,10 +108,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final average = filteredResults.isEmpty ? 0.0 : totalRevenue / filteredResults.length;
 
           return StreamBuilder<List<Expense>>(
-            stream: appDb.select(appDb.expenses).watch(),
+            stream: _expensesStream,
             builder: (context, expSnapshot) {
               return StreamBuilder<List<DebtPayment>>(
-                stream: appDb.select(appDb.debtPayments).watch(),
+                stream: _debtPaymentsStream,
                 builder: (context, dpSnapshot) {
                   final allExpenses = expSnapshot.data ?? [];
                   final filteredExpenses = allExpenses.where((e) {
@@ -156,6 +166,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                 
                 if (widget.userRole == 'Admin') ...[
+                  const SizedBox(height: 32),
+                  _buildSalesChart(filteredResults, range),
+
                   const SizedBox(height: 32),
                   const Text('Performa Kasir (Sesuai Filter)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
                   const SizedBox(height: 16),
@@ -261,6 +274,224 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildSalesChart(List<drift.TypedResult> txs, DateTimeRange? range) {
+    if (txs.isEmpty) return const SizedBox();
+
+    bool isSingleDay = true;
+    if (range != null) {
+      if (range.start.year != range.end.year || range.start.month != range.end.month || range.start.day != range.end.day) {
+        isSingleDay = false;
+      }
+    } else {
+      isSingleDay = false; 
+    }
+
+    // Grouping
+    Map<DateTime, double> dateGrouped = {};
+    for (var r in txs) {
+      final t = r.readTable(appDb.transactions);
+      final date = t.createdAt;
+      DateTime key;
+      if (isSingleDay) {
+        key = DateTime(date.year, date.month, date.day, date.hour);
+      } else {
+        key = DateTime(date.year, date.month, date.day);
+      }
+      dateGrouped[key] = (dateGrouped[key] ?? 0) + t.grandTotal;
+    }
+
+    final sortedKeys = dateGrouped.keys.toList()..sort();
+    final displayKeys = sortedKeys.length > 14 ? sortedKeys.sublist(sortedKeys.length - 14) : sortedKeys;
+
+    double maxY = 0;
+    for (var k in displayKeys) {
+      if (dateGrouped[k]! > maxY) maxY = dateGrouped[k]!;
+    }
+    if (maxY == 0) maxY = 10000;
+
+    final formatter = NumberFormat.currency(locale: 'id', symbol: 'Rp', decimalDigits: 0);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        List<FlSpot> spots = [];
+        int xIndex = 0;
+
+        for (var k in displayKeys) {
+          final val = dateGrouped[k]!;
+          spots.add(FlSpot(xIndex.toDouble(), val));
+          xIndex++;
+        }
+
+        return Container(
+          child: AspectRatio(
+            aspectRatio: constraints.maxWidth < 600 ? 1.2 : 2.5,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey.shade100, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  )
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.show_chart, color: Colors.blueAccent, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isSingleDay ? 'Tren Penjualan (Per Jam)' : 'Tren Penjualan (Per Hari)', 
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827))
+                          ),
+                          Text('Analisis performa pendapatan', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: LineChart(
+                      LineChartData(
+                        minX: 0,
+                        maxX: (displayKeys.length - 1).toDouble() > 0 ? (displayKeys.length - 1).toDouble() : 1,
+                        minY: 0,
+                        maxY: maxY * 1.2,
+                        lineTouchData: LineTouchData(
+                          touchTooltipData: LineTouchTooltipData(
+                            getTooltipColor: (_) => Colors.blueGrey.shade900.withValues(alpha: 0.95),
+                            tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            tooltipMargin: 8,
+                            getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                final index = spot.x.toInt();
+                                if (index < 0 || index >= displayKeys.length) return null;
+                                final k = displayKeys[index];
+                                final label = isSingleDay ? '${k.hour.toString().padLeft(2, '0')}:00' : DateFormat('dd MMM yyyy').format(k);
+                                final val = formatter.format(spot.y);
+                                return LineTooltipItem(
+                                  '$label\n',
+                                  const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                                  children: [
+                                    TextSpan(
+                                      text: val,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 0.5),
+                                    ),
+                                  ],
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 50,
+                              getTitlesWidget: (value, meta) {
+                                if (value == 0 || value == meta.max) return const SizedBox.shrink();
+                                String text = '';
+                                if (value >= 1000000) {
+                                  text = '${(value / 1000000).toStringAsFixed(1)}Jt';
+                                } else if (value >= 1000) {
+                                  text = '${(value / 1000).toStringAsFixed(0)}K';
+                                } else {
+                                  text = value.toStringAsFixed(0);
+                                }
+                                return SideTitleWidget(
+                                  meta: meta,
+                                  child: Text(text, style: TextStyle(color: Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.w600)),
+                                );
+                              },
+                            ),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 36,
+                              interval: 1,
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                if (index < 0 || index >= displayKeys.length || value != index.toDouble()) return const SizedBox.shrink();
+                                final k = displayKeys[index];
+                                final text = isSingleDay ? '${k.hour.toString().padLeft(2, '0')}:00' : DateFormat('dd/MM').format(k);
+                                return SideTitleWidget(
+                                  meta: meta,
+                                  space: 8,
+                                  child: Text(text, style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.bold)),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade100, strokeWidth: 1.5, dashArray: [6, 4]),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: spots,
+                            isCurved: false, // Diubah menjadi false agar zigzag
+                            color: const Color(0xFF3B82F6),
+                            barWidth: 3,
+                            isStrokeCapRound: true,
+                            dotData: FlDotData(
+                              show: true,
+                              getDotPainter: (spot, percent, barData, index) {
+                                return FlDotCirclePainter(
+                                  radius: 4,
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                  strokeColor: const Color(0xFF3B82F6),
+                                );
+                              }
+                            ),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                                  const Color(0xFF3B82F6).withValues(alpha: 0.0),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    );
+  }
+
   Widget _buildSummaryCards({
     required BuildContext context, 
     required double revenue, 
@@ -293,9 +524,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildLowStockAlert() {
     return StreamBuilder<List<drift.TypedResult>>(
-      stream: (appDb.select(appDb.inventory).join([
-        drift.innerJoin(appDb.products, appDb.products.id.equalsExp(appDb.inventory.productId))
-      ])..where(drift.CustomExpression<bool>('inventory.stock <= inventory.minimum_stock'))).watch(),
+      stream: _lowStockStream,
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
         
@@ -461,32 +690,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blueGrey.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-        headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
-        columns: const [
-          DataColumn(label: Text('Nama Kasir', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Jml Transaksi', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Pendapatan', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Piutang (Kasbon)', style: TextStyle(fontWeight: FontWeight.bold))),
-        ],
-        rows: data.entries.map((entry) {
-          final count = entry.value['count'] as int;
-          final revenue = entry.value['revenue'] as double;
-          final piutang = entry.value['piutang'] as double;
-          return DataRow(cells: [
-            DataCell(Text(entry.key, style: const TextStyle(fontWeight: FontWeight.w600))),
-            DataCell(Text('$count')),
-            DataCell(Text('Rp ${formatter.format(revenue.toInt())}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
-            DataCell(Text('Rp ${formatter.format(piutang.toInt())}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange))),
-          ]);
-        }).toList(),
-      ),
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowHeight: 56,
+          dataRowMaxHeight: 70,
+          dataRowMinHeight: 70,
+          headingTextStyle: const TextStyle(color: Color(0xFF6B7280), fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+          headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+          dividerThickness: 1,
+          columns: const [
+            DataColumn(label: Text('KASIR')),
+            DataColumn(label: Text('TRANSAKSI')),
+            DataColumn(label: Text('PENDAPATAN')),
+            DataColumn(label: Text('KASBON')),
+          ],
+          rows: data.entries.map((entry) {
+            final count = entry.value['count'] as int;
+            final revenue = entry.value['revenue'] as double;
+            final piutang = entry.value['piutang'] as double;
+            
+            return DataRow(cells: [
+              DataCell(Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                    child: Text(
+                      entry.key.substring(0, 1).toUpperCase(), 
+                      style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(entry.key, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF111827))),
+                ],
+              )),
+              DataCell(Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('$count', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+              )),
+              DataCell(Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('Rp ${formatter.format(revenue.toInt())}', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green)),
+              )),
+              DataCell(
+                piutang > 0 
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('Rp ${formatter.format(piutang.toInt())}', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.orange)),
+                  )
+                : const Text('-', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500))
+              ),
+            ]);
+          }).toList(),
+        ),
       ),
     );
   }

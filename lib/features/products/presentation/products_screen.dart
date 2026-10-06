@@ -1017,15 +1017,14 @@ class _ProductSearchDelegate extends SearchDelegate<String> {
 
   Widget _buildSearchResults() {
     final formatter = NumberFormat('#,###', 'id_ID');
-    return StreamBuilder<List<Product>>(
-      stream: appDb.select(appDb.products).watch(),
+    final q = '%$query%';
+    return FutureBuilder<List<Product>>(
+      future: (appDb.select(appDb.products)
+        ..where((p) => p.name.like(q) | p.sku.like(q) | p.barcode.like(q))
+        ..limit(50)
+      ).get(),
       builder: (context, snapshot) {
-        final products = (snapshot.data ?? []).where((p) {
-          final q = query.toLowerCase();
-          return p.name.toLowerCase().contains(q) ||
-              (p.sku?.toLowerCase().contains(q) ?? false) ||
-              (p.barcode?.toLowerCase().contains(q) ?? false);
-        }).toList();
+        final products = snapshot.data ?? [];
 
         if (products.isEmpty) {
           return Center(child: Text('Tidak ditemukan produk untuk "$query"'));

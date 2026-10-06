@@ -180,11 +180,11 @@ class _SalesReportView extends StatelessWidget {
       query.where(appDb.transactions.createdAt.isBiggerOrEqualValue(dateRange!.start) & appDb.transactions.createdAt.isSmallerOrEqualValue(dateRange!.end.add(const Duration(days: 1))));
     }
 
-    return StreamBuilder<List<drift.TypedResult>>(
-      stream: query.watch(),
+    return FutureBuilder<List<drift.TypedResult>>(
+      future: query.get(),
       builder: (context, snapshot) {
-        return StreamBuilder<List<DebtPayment>>(
-          stream: appDb.select(appDb.debtPayments).watch(),
+        return FutureBuilder<List<DebtPayment>>(
+          future: appDb.select(appDb.debtPayments).get(),
           builder: (context, dpSnapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -710,8 +710,8 @@ class _ProductReportView extends StatelessWidget {
       query.where(appDb.transactions.status.equals('COMPLETED'));
     }
 
-    return StreamBuilder<List<drift.TypedResult>>(
-      stream: query.watch(),
+    return FutureBuilder<List<drift.TypedResult>>(
+      future: query.get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
            return const Center(child: CircularProgressIndicator());
@@ -854,11 +854,11 @@ class _ProfitReportView extends StatelessWidget {
       expQuery.where((e) => e.date.isBiggerOrEqualValue(dateRange!.start) & e.date.isSmallerOrEqualValue(dateRange!.end.add(const Duration(days: 1))));
     }
 
-    return StreamBuilder<List<drift.TypedResult>>(
-      stream: cogsQuery.watch(),
+    return FutureBuilder<List<drift.TypedResult>>(
+      future: cogsQuery.get(),
       builder: (context, cogsSnapshot) {
-        return StreamBuilder<List<Expense>>(
-          stream: expQuery.watch(),
+        return FutureBuilder<List<Expense>>(
+          future: expQuery.get(),
           builder: (context, expSnapshot) {
             final cogsResults = cogsSnapshot.data ?? [];
             final expenses = expSnapshot.data ?? [];

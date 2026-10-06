@@ -150,51 +150,97 @@ class _MainLayoutState extends State<MainLayout> {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
-      drawer: isMobile
+            drawer: isMobile
           ? Drawer(
-              child: Column(
-                children: [
-                  UserAccountsDrawerHeader(
-                    accountName: Text(widget.userName),
-                    accountEmail: Text(widget.userRole),
-                    currentAccountPicture: const CircleAvatar(
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person, color: Colors.blue, size: 40),
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 24, 20, 16),
+                      child: Text('Menu Utama', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _navDestinations.length,
-                      itemBuilder: (context, index) {
-                        final dest = _navDestinations[index];
-                        return ListTile(
-                          leading: _selectedIndex == index ? dest.selectedIcon : dest.icon,
-                          title: dest.label,
-                          selected: _selectedIndex == index,
-                          onTap: () {
-                            _onDestinationSelected(index);
-                            Navigator.pop(context); // Close drawer
-                          },
-                        );
+                    Expanded(
+                      child: GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.85,
+                        ),
+                        itemCount: _navDestinations.length,
+                        itemBuilder: (context, index) {
+                          final dest = _navDestinations[index];
+                          final labelText = (dest.label as Text).data ?? '';
+                          final icon = (dest.icon as Icon).icon;
+                          
+                          Color color = Colors.blue;
+                          switch (labelText.toLowerCase()) {
+                            case 'dashboard': color = Colors.blue.shade600; break;
+                            case 'pos / kasir': color = Colors.teal.shade500; break;
+                            case 'produk': color = Colors.orange.shade500; break;
+                            case 'stok opname': color = Colors.lightBlue.shade500; break;
+                            case 'kategori': color = Colors.pink.shade500; break;
+                            case 'diskon / promo': color = Colors.purple.shade500; break;
+                            case 'pembelian': color = Colors.blueGrey.shade500; break;
+                            case 'pengeluaran': color = Colors.red.shade500; break;
+                            case 'laporan': color = Colors.purple.shade600; break;
+                            case 'shift': color = Colors.cyan.shade600; break;
+                            case 'pelanggan': color = Colors.indigo.shade500; break;
+                            case 'kelola pengguna': color = Colors.teal.shade600; break;
+                            case 'profil toko': color = Colors.blue.shade700; break;
+                            case 'printer': color = Colors.grey.shade700; break;
+                          }
+
+                          return InkWell(
+                            onTap: () {
+                              _onDestinationSelected(index);
+                              Navigator.pop(context); // Close drawer
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Icon(icon, color: Colors.white, size: 28),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  labelText,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.logout, color: Colors.red),
+                      title: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                      onTap: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.clear();
+                        if (context.mounted) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          );
+                        }
                       },
                     ),
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Logout', style: TextStyle(color: Colors.red)),
-                    onTap: () async {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.clear();
-                      if (context.mounted) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                  ],
+                ),
               ),
             )
           : null,

@@ -125,7 +125,9 @@ class _POSScreenState extends State<POSScreen> {
     await SoundService.playBeep();
     final product = await (appDb.select(appDb.products)..where((p) => p.barcode.equals(barcode))).getSingleOrNull();
     if (product != null) {
-      _addToCart(product);
+      final inv = await (appDb.select(appDb.inventory)..where((i) => i.productId.equals(product.id))).getSingleOrNull();
+      final stock = inv?.stock ?? 0;
+      _addToCart(product, maxStock: stock);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${product.name} ditambahkan!"), duration: const Duration(seconds: 1)));
       }
@@ -135,10 +137,22 @@ class _POSScreenState extends State<POSScreen> {
       }
     }
   }
-  void _addDirectlyToCart(Product product, double basePrice, String? variantName) {
+  void _addDirectlyToCart(Product product, double basePrice, String? variantName, {int? maxStock}) {
+    final existingIndex = _cartItems.indexWhere((item) => item["id"] == product.id && item["variantName"] == variantName);
+    
+    if (existingIndex >= 0) {
+      if (maxStock != null && _cartItems[existingIndex]["qty"] >= maxStock) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Stok tidak mencukupi!"), backgroundColor: Colors.red));
+        return;
+      }
+    } else {
+      if (maxStock != null && maxStock <= 0) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Stok habis!"), backgroundColor: Colors.red));
+        return;
+      }
+    }
+
     setState(() {
-      final existingIndex = _cartItems.indexWhere((item) => item["id"] == product.id && item["variantName"] == variantName);
-      
       int currentQty = 1;
       if (existingIndex >= 0) {
         currentQty = _cartItems[existingIndex]["qty"] + 1;
@@ -152,7 +166,8 @@ class _POSScreenState extends State<POSScreen> {
           "qty": 1, 
           "variantName": variantName,
           "wholesaleMinQty": product.wholesaleMinQty,
-          "wholesalePrice": product.wholesalePrice
+          "wholesalePrice": product.wholesalePrice,
+          "maxStock": maxStock,
         });
       }
       
@@ -173,12 +188,12 @@ class _POSScreenState extends State<POSScreen> {
     });
   }
 
-  Future<void> _addToCart(Product product) async {
+  Future<void> _addToCart(Product product, {int? maxStock}) async {
     // Cek apakah produk ini memiliki varian
     final variants = await (appDb.select(appDb.productVariants)..where((t) => t.productId.equals(product.id))).get();
 
     if (variants.isEmpty) {
-      _addDirectlyToCart(product, product.sellingPrice, null);
+      _addDirectlyToCart(product, product.sellingPrice, null, maxStock: maxStock);
     } else {
       if (mounted) {
         showDialog(
@@ -193,7 +208,7 @@ class _POSScreenState extends State<POSScreen> {
                   trailing: Text("Rp ${NumberFormat("#,###", "id_ID").format(v.price.toInt())}", style: const TextStyle(fontWeight: FontWeight.bold)),
                   onTap: () {
                     Navigator.pop(context);
-                    _addDirectlyToCart(product, v.price, v.name);
+                    _addDirectlyToCart(product, v.price, v.name, maxStock: maxStock); // v.stock if supported, but maxStock for now
                   },
                 )).toList()
               ),
@@ -218,7 +233,9 @@ class _POSScreenState extends State<POSScreen> {
       final products = await (appDb.select(appDb.products)..where((t) => t.sku.equals(barcode) | t.barcode.equals(barcode))).get();
 
       if (products.isNotEmpty) {
-        _addToCart(products.first);
+        final inv = await (appDb.select(appDb.inventory)..where((i) => i.productId.equals(products.first.id))).getSingleOrNull();
+        final stock = inv?.stock ?? 0;
+        _addToCart(products.first, maxStock: stock);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${products.first.name} otomatis ditambahkan!'), backgroundColor: Colors.green));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Item (Kode: $barcode) tidak ditemukan di database!'), backgroundColor: Colors.red));
@@ -1173,8 +1190,8 @@ Simpan pesan ini sebagai struk digital Anda.''';
                         stock: stock,
                         unit: p.unit,
                         qtyInCart: qtyInCart,
-                        onTap: () => _addToCart(p),
-                        onIncrement: () => _addToCart(p),
+                        onTap: () => _addToCart(p, maxStock: stock),
+                        onIncrement: () => _addToCart(p, maxStock: stock),
                         onDecrement: () {
                            // Find index in cart and decrement
                            for (int i = 0; i < _cartItems.length; i++) {
@@ -1196,6 +1213,14 @@ Simpan pesan ini sebagai struk digital Anda.''';
     );
   }
   void _updateCartQty(int index, int delta) {
+    final item = _cartItems[index];
+    final maxStock = item["maxStock"];
+    
+    if (delta > 0 && maxStock != null && item["qty"] + delta > maxStock) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Stok tidak mencukupi!'), backgroundColor: Colors.red));
+      return;
+    }
+    
     setState(() {
       _cartItems[index]['qty'] += delta;
       if (_cartItems[index]['qty'] <= 0) {
@@ -1216,6 +1241,74 @@ Simpan pesan ini sebagai struk digital Anda.''';
         }
       }
     });
+  }
+
+  void _setCartQty(int index, int newQty) {
+    final item = _cartItems[index];
+    final maxStock = item["maxStock"];
+    
+    if (maxStock != null && newQty > maxStock) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Stok tidak mencukupi! Diset ke maksimal.'), backgroundColor: Colors.orange));
+      newQty = maxStock;
+    }
+    
+    if (newQty <= 0) {
+      setState(() { _cartItems.removeAt(index); });
+      return;
+    }
+    
+    setState(() {
+      _cartItems[index]['qty'] = newQty;
+      
+      final updatedItem = _cartItems[index];
+      if (updatedItem["wholesaleMinQty"] != null && updatedItem["wholesalePrice"] != null && updatedItem["wholesaleMinQty"] > 0) {
+        if (updatedItem["qty"] >= updatedItem["wholesaleMinQty"]) {
+          updatedItem["price"] = updatedItem["wholesalePrice"];
+          updatedItem["isWholesale"] = true;
+        } else {
+          updatedItem["price"] = updatedItem["basePrice"];
+          updatedItem["isWholesale"] = false;
+        }
+      } else {
+        updatedItem["isWholesale"] = false;
+      }
+    });
+  }
+
+  Future<void> _showEditQtyDialog(int index) async {
+    final item = _cartItems[index];
+    final ctrl = TextEditingController(text: item['qty'].toString());
+    
+    final newQty = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Jumlah: ${item['name']}'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Ketik jumlah'),
+          onSubmitted: (val) {
+             final parsed = int.tryParse(val);
+             if (parsed != null) Navigator.pop(context, parsed);
+          },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          FilledButton(
+            onPressed: () {
+              final parsed = int.tryParse(ctrl.text);
+              if (parsed != null) Navigator.pop(context, parsed);
+            }, 
+            child: const Text('Simpan')
+          ),
+        ],
+      )
+    );
+    
+    if (newQty != null) {
+       _setCartQty(index, newQty);
+    }
   }
 
   Widget _buildCartSection() {
@@ -1266,7 +1359,18 @@ Simpan pesan ini sebagai struk digital Anda.''';
                                 padding: EdgeInsets.zero,
                               ),
                               const SizedBox(width: 8),
-                              Text('${item['qty']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              InkWell(
+                                onTap: () => _showEditQtyDialog(index),
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text('${item['qty']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueAccent)),
+                                ),
+                              ),
                               const SizedBox(width: 8),
                               IconButton(
                                 icon: const Icon(Icons.add_circle_outline, color: Colors.green),
@@ -1534,7 +1638,7 @@ class _ProductCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        stock > 0 ? '$stock $unit' : 'Habis',
+                        stock > 0 ? 'final stock $unit' : 'Habis',
                         style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),

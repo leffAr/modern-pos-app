@@ -8989,6 +8989,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $StockOpnamesTable stockOpnames = $StockOpnamesTable(this);
   late final $StockOpnameItemsTable stockOpnameItems =
       $StockOpnameItemsTable(this);
+  late final Index productSkuIdx = Index(
+      'product_sku_idx', 'CREATE INDEX product_sku_idx ON products (sku)');
+  late final Index productBarcodeIdx = Index('product_barcode_idx',
+      'CREATE INDEX product_barcode_idx ON products (barcode)');
+  late final Index trxDateIdx = Index(
+      'trx_date_idx', 'CREATE INDEX trx_date_idx ON transactions (created_at)');
+  late final Index trxReceiptIdx = Index('trx_receipt_idx',
+      'CREATE INDEX trx_receipt_idx ON transactions (receipt_number)');
+  late final Index trxItemTrxidIdx = Index('trx_item_trxid_idx',
+      'CREATE INDEX trx_item_trxid_idx ON transaction_items (transaction_id)');
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9016,7 +9026,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         returns,
         debtPayments,
         stockOpnames,
-        stockOpnameItems
+        stockOpnameItems,
+        productSkuIdx,
+        productBarcodeIdx,
+        trxDateIdx,
+        trxReceiptIdx,
+        trxItemTrxidIdx
       ];
 }
 
@@ -9569,9 +9584,10 @@ final class $$BranchesTableReferences
       db.businesses.createAlias(
           $_aliasNameGenerator(db.branches.businessId, db.businesses.id));
 
-  $$BusinessesTableProcessedTableManager get businessId {
+  $$BusinessesTableProcessedTableManager? get businessId {
+    if ($_item.businessId == null) return null;
     final manager = $$BusinessesTableTableManager($_db, $_db.businesses)
-        .filter((f) => f.id($_item.businessId));
+        .filter((f) => f.id($_item.businessId!));
     final item = $_typedResult.readTableOrNull(_businessIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -11685,9 +11701,10 @@ final class $$ProductsTableReferences
       db.businesses.createAlias(
           $_aliasNameGenerator(db.products.businessId, db.businesses.id));
 
-  $$BusinessesTableProcessedTableManager get businessId {
+  $$BusinessesTableProcessedTableManager? get businessId {
+    if ($_item.businessId == null) return null;
     final manager = $$BusinessesTableTableManager($_db, $_db.businesses)
-        .filter((f) => f.id($_item.businessId));
+        .filter((f) => f.id($_item.businessId!));
     final item = $_typedResult.readTableOrNull(_businessIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -12544,9 +12561,10 @@ final class $$InventoryTableReferences
       db.products.createAlias(
           $_aliasNameGenerator(db.inventory.productId, db.products.id));
 
-  $$ProductsTableProcessedTableManager get productId {
+  $$ProductsTableProcessedTableManager? get productId {
+    if ($_item.productId == null) return null;
     final manager = $$ProductsTableTableManager($_db, $_db.products)
-        .filter((f) => f.id($_item.productId));
+        .filter((f) => f.id($_item.productId!));
     final item = $_typedResult.readTableOrNull(_productIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -12556,9 +12574,10 @@ final class $$InventoryTableReferences
   static $BranchesTable _branchIdTable(_$AppDatabase db) => db.branches
       .createAlias($_aliasNameGenerator(db.inventory.branchId, db.branches.id));
 
-  $$BranchesTableProcessedTableManager get branchId {
+  $$BranchesTableProcessedTableManager? get branchId {
+    if ($_item.branchId == null) return null;
     final manager = $$BranchesTableTableManager($_db, $_db.branches)
-        .filter((f) => f.id($_item.branchId));
+        .filter((f) => f.id($_item.branchId!));
     final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -12895,9 +12914,10 @@ final class $$CustomersTableReferences
       db.businesses.createAlias(
           $_aliasNameGenerator(db.customers.businessId, db.businesses.id));
 
-  $$BusinessesTableProcessedTableManager get businessId {
+  $$BusinessesTableProcessedTableManager? get businessId {
+    if ($_item.businessId == null) return null;
     final manager = $$BusinessesTableTableManager($_db, $_db.businesses)
-        .filter((f) => f.id($_item.businessId));
+        .filter((f) => f.id($_item.businessId!));
     final item = $_typedResult.readTableOrNull(_businessIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -13354,9 +13374,10 @@ final class $$SuppliersTableReferences
       db.businesses.createAlias(
           $_aliasNameGenerator(db.suppliers.businessId, db.businesses.id));
 
-  $$BusinessesTableProcessedTableManager get businessId {
+  $$BusinessesTableProcessedTableManager? get businessId {
+    if ($_item.businessId == null) return null;
     final manager = $$BusinessesTableTableManager($_db, $_db.businesses)
-        .filter((f) => f.id($_item.businessId));
+        .filter((f) => f.id($_item.businessId!));
     final item = $_typedResult.readTableOrNull(_businessIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -13899,9 +13920,10 @@ final class $$TransactionsTableReferences
       db.branches.createAlias(
           $_aliasNameGenerator(db.transactions.branchId, db.branches.id));
 
-  $$BranchesTableProcessedTableManager get branchId {
+  $$BranchesTableProcessedTableManager? get branchId {
+    if ($_item.branchId == null) return null;
     final manager = $$BranchesTableTableManager($_db, $_db.branches)
-        .filter((f) => f.id($_item.branchId));
+        .filter((f) => f.id($_item.branchId!));
     final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -13911,9 +13933,10 @@ final class $$TransactionsTableReferences
   static $UsersTable _userIdTable(_$AppDatabase db) => db.users
       .createAlias($_aliasNameGenerator(db.transactions.userId, db.users.id));
 
-  $$UsersTableProcessedTableManager get userId {
+  $$UsersTableProcessedTableManager? get userId {
+    if ($_item.userId == null) return null;
     final manager = $$UsersTableTableManager($_db, $_db.users)
-        .filter((f) => f.id($_item.userId));
+        .filter((f) => f.id($_item.userId!));
     final item = $_typedResult.readTableOrNull(_userIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -14716,9 +14739,10 @@ final class $$TransactionItemsTableReferences extends BaseReferences<
       db.transactions.createAlias($_aliasNameGenerator(
           db.transactionItems.transactionId, db.transactions.id));
 
-  $$TransactionsTableProcessedTableManager get transactionId {
+  $$TransactionsTableProcessedTableManager? get transactionId {
+    if ($_item.transactionId == null) return null;
     final manager = $$TransactionsTableTableManager($_db, $_db.transactions)
-        .filter((f) => f.id($_item.transactionId));
+        .filter((f) => f.id($_item.transactionId!));
     final item = $_typedResult.readTableOrNull(_transactionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -14729,9 +14753,10 @@ final class $$TransactionItemsTableReferences extends BaseReferences<
       db.products.createAlias(
           $_aliasNameGenerator(db.transactionItems.productId, db.products.id));
 
-  $$ProductsTableProcessedTableManager get productId {
+  $$ProductsTableProcessedTableManager? get productId {
+    if ($_item.productId == null) return null;
     final manager = $$ProductsTableTableManager($_db, $_db.products)
-        .filter((f) => f.id($_item.productId));
+        .filter((f) => f.id($_item.productId!));
     final item = $_typedResult.readTableOrNull(_productIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -15090,9 +15115,10 @@ final class $$PaymentsTableReferences
       db.transactions.createAlias(
           $_aliasNameGenerator(db.payments.transactionId, db.transactions.id));
 
-  $$TransactionsTableProcessedTableManager get transactionId {
+  $$TransactionsTableProcessedTableManager? get transactionId {
+    if ($_item.transactionId == null) return null;
     final manager = $$TransactionsTableTableManager($_db, $_db.transactions)
-        .filter((f) => f.id($_item.transactionId));
+        .filter((f) => f.id($_item.transactionId!));
     final item = $_typedResult.readTableOrNull(_transactionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -15363,9 +15389,10 @@ final class $$ProductVariantsTableReferences extends BaseReferences<
       db.products.createAlias(
           $_aliasNameGenerator(db.productVariants.productId, db.products.id));
 
-  $$ProductsTableProcessedTableManager get productId {
+  $$ProductsTableProcessedTableManager? get productId {
+    if ($_item.productId == null) return null;
     final manager = $$ProductsTableTableManager($_db, $_db.products)
-        .filter((f) => f.id($_item.productId));
+        .filter((f) => f.id($_item.productId!));
     final item = $_typedResult.readTableOrNull(_productIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -15645,9 +15672,10 @@ final class $$ShiftsTableReferences
   static $BranchesTable _branchIdTable(_$AppDatabase db) => db.branches
       .createAlias($_aliasNameGenerator(db.shifts.branchId, db.branches.id));
 
-  $$BranchesTableProcessedTableManager get branchId {
+  $$BranchesTableProcessedTableManager? get branchId {
+    if ($_item.branchId == null) return null;
     final manager = $$BranchesTableTableManager($_db, $_db.branches)
-        .filter((f) => f.id($_item.branchId));
+        .filter((f) => f.id($_item.branchId!));
     final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -15657,9 +15685,10 @@ final class $$ShiftsTableReferences
   static $UsersTable _userIdTable(_$AppDatabase db) =>
       db.users.createAlias($_aliasNameGenerator(db.shifts.userId, db.users.id));
 
-  $$UsersTableProcessedTableManager get userId {
+  $$UsersTableProcessedTableManager? get userId {
+    if ($_item.userId == null) return null;
     final manager = $$UsersTableTableManager($_db, $_db.users)
-        .filter((f) => f.id($_item.userId));
+        .filter((f) => f.id($_item.userId!));
     final item = $_typedResult.readTableOrNull(_userIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -16054,9 +16083,10 @@ final class $$ExpensesTableReferences
   static $BranchesTable _branchIdTable(_$AppDatabase db) => db.branches
       .createAlias($_aliasNameGenerator(db.expenses.branchId, db.branches.id));
 
-  $$BranchesTableProcessedTableManager get branchId {
+  $$BranchesTableProcessedTableManager? get branchId {
+    if ($_item.branchId == null) return null;
     final manager = $$BranchesTableTableManager($_db, $_db.branches)
-        .filter((f) => f.id($_item.branchId));
+        .filter((f) => f.id($_item.branchId!));
     final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -16066,9 +16096,10 @@ final class $$ExpensesTableReferences
   static $UsersTable _userIdTable(_$AppDatabase db) => db.users
       .createAlias($_aliasNameGenerator(db.expenses.userId, db.users.id));
 
-  $$UsersTableProcessedTableManager get userId {
+  $$UsersTableProcessedTableManager? get userId {
+    if ($_item.userId == null) return null;
     final manager = $$UsersTableTableManager($_db, $_db.users)
-        .filter((f) => f.id($_item.userId));
+        .filter((f) => f.id($_item.userId!));
     final item = $_typedResult.readTableOrNull(_userIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -16424,9 +16455,10 @@ final class $$PurchasesTableReferences
   static $BranchesTable _branchIdTable(_$AppDatabase db) => db.branches
       .createAlias($_aliasNameGenerator(db.purchases.branchId, db.branches.id));
 
-  $$BranchesTableProcessedTableManager get branchId {
+  $$BranchesTableProcessedTableManager? get branchId {
+    if ($_item.branchId == null) return null;
     final manager = $$BranchesTableTableManager($_db, $_db.branches)
-        .filter((f) => f.id($_item.branchId));
+        .filter((f) => f.id($_item.branchId!));
     final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -16437,9 +16469,10 @@ final class $$PurchasesTableReferences
       db.suppliers.createAlias(
           $_aliasNameGenerator(db.purchases.supplierId, db.suppliers.id));
 
-  $$SuppliersTableProcessedTableManager get supplierId {
+  $$SuppliersTableProcessedTableManager? get supplierId {
+    if ($_item.supplierId == null) return null;
     final manager = $$SuppliersTableTableManager($_db, $_db.suppliers)
-        .filter((f) => f.id($_item.supplierId));
+        .filter((f) => f.id($_item.supplierId!));
     final item = $_typedResult.readTableOrNull(_supplierIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -16877,9 +16910,10 @@ final class $$PurchaseItemsTableReferences
       db.purchases.createAlias(
           $_aliasNameGenerator(db.purchaseItems.purchaseId, db.purchases.id));
 
-  $$PurchasesTableProcessedTableManager get purchaseId {
+  $$PurchasesTableProcessedTableManager? get purchaseId {
+    if ($_item.purchaseId == null) return null;
     final manager = $$PurchasesTableTableManager($_db, $_db.purchases)
-        .filter((f) => f.id($_item.purchaseId));
+        .filter((f) => f.id($_item.purchaseId!));
     final item = $_typedResult.readTableOrNull(_purchaseIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -16890,9 +16924,10 @@ final class $$PurchaseItemsTableReferences
       db.products.createAlias(
           $_aliasNameGenerator(db.purchaseItems.productId, db.products.id));
 
-  $$ProductsTableProcessedTableManager get productId {
+  $$ProductsTableProcessedTableManager? get productId {
+    if ($_item.productId == null) return null;
     final manager = $$ProductsTableTableManager($_db, $_db.products)
-        .filter((f) => f.id($_item.productId));
+        .filter((f) => f.id($_item.productId!));
     final item = $_typedResult.readTableOrNull(_productIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -17222,9 +17257,10 @@ final class $$ReturnsTableReferences
       db.transactions.createAlias(
           $_aliasNameGenerator(db.returns.transactionId, db.transactions.id));
 
-  $$TransactionsTableProcessedTableManager get transactionId {
+  $$TransactionsTableProcessedTableManager? get transactionId {
+    if ($_item.transactionId == null) return null;
     final manager = $$TransactionsTableTableManager($_db, $_db.transactions)
-        .filter((f) => f.id($_item.transactionId));
+        .filter((f) => f.id($_item.transactionId!));
     final item = $_typedResult.readTableOrNull(_transactionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -17495,9 +17531,10 @@ final class $$DebtPaymentsTableReferences
       db.customers.createAlias(
           $_aliasNameGenerator(db.debtPayments.customerId, db.customers.id));
 
-  $$CustomersTableProcessedTableManager get customerId {
+  $$CustomersTableProcessedTableManager? get customerId {
+    if ($_item.customerId == null) return null;
     final manager = $$CustomersTableTableManager($_db, $_db.customers)
-        .filter((f) => f.id($_item.customerId));
+        .filter((f) => f.id($_item.customerId!));
     final item = $_typedResult.readTableOrNull(_customerIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -17768,9 +17805,10 @@ final class $$StockOpnamesTableReferences
       db.branches.createAlias(
           $_aliasNameGenerator(db.stockOpnames.branchId, db.branches.id));
 
-  $$BranchesTableProcessedTableManager get branchId {
+  $$BranchesTableProcessedTableManager? get branchId {
+    if ($_item.branchId == null) return null;
     final manager = $$BranchesTableTableManager($_db, $_db.branches)
-        .filter((f) => f.id($_item.branchId));
+        .filter((f) => f.id($_item.branchId!));
     final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -17780,9 +17818,10 @@ final class $$StockOpnamesTableReferences
   static $UsersTable _userIdTable(_$AppDatabase db) => db.users
       .createAlias($_aliasNameGenerator(db.stockOpnames.userId, db.users.id));
 
-  $$UsersTableProcessedTableManager get userId {
+  $$UsersTableProcessedTableManager? get userId {
+    if ($_item.userId == null) return null;
     final manager = $$UsersTableTableManager($_db, $_db.users)
-        .filter((f) => f.id($_item.userId));
+        .filter((f) => f.id($_item.userId!));
     final item = $_typedResult.readTableOrNull(_userIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -18198,9 +18237,10 @@ final class $$StockOpnameItemsTableReferences extends BaseReferences<
       db.stockOpnames.createAlias($_aliasNameGenerator(
           db.stockOpnameItems.opnameId, db.stockOpnames.id));
 
-  $$StockOpnamesTableProcessedTableManager get opnameId {
+  $$StockOpnamesTableProcessedTableManager? get opnameId {
+    if ($_item.opnameId == null) return null;
     final manager = $$StockOpnamesTableTableManager($_db, $_db.stockOpnames)
-        .filter((f) => f.id($_item.opnameId));
+        .filter((f) => f.id($_item.opnameId!));
     final item = $_typedResult.readTableOrNull(_opnameIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
@@ -18211,9 +18251,10 @@ final class $$StockOpnameItemsTableReferences extends BaseReferences<
       db.products.createAlias(
           $_aliasNameGenerator(db.stockOpnameItems.productId, db.products.id));
 
-  $$ProductsTableProcessedTableManager get productId {
+  $$ProductsTableProcessedTableManager? get productId {
+    if ($_item.productId == null) return null;
     final manager = $$ProductsTableTableManager($_db, $_db.products)
-        .filter((f) => f.id($_item.productId));
+        .filter((f) => f.id($_item.productId!));
     final item = $_typedResult.readTableOrNull(_productIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
