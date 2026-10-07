@@ -149,25 +149,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildWelcomeHeader(context, finalTotalRevenue),
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSummaryCards(
-                            context: context, 
-                            revenue: finalTotalRevenue, 
-                            txCount: filteredResults.length, 
-                            avg: average, 
-                            netProfit: netProfit,
-                            expense: totalExpense,
-                            piutang: finalTotalPiutang,
-                          ),
-                
-                if (widget.userRole == 'Admin') ...[
-                  const SizedBox(height: 32),
-                  _buildSalesChart(filteredResults, range),
+                                        _buildWelcomeHeader(context, finalTotalRevenue),
+                    Transform.translate(
+                      offset: const Offset(0, -32),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSummaryCards(
+                              context: context, 
+                              revenue: finalTotalRevenue, 
+                              txCount: filteredResults.length, 
+                              avg: average, 
+                              netProfit: netProfit,
+                              expense: totalExpense,
+                              piutang: finalTotalPiutang,
+                            ),
+                  
+                  if (widget.userRole == 'Admin') ...[
+                    const SizedBox(height: 32),
+                    _buildSalesChart(filteredResults, range),
+
 
                   const SizedBox(height: 32),
                   const Text('Performa Kasir (Sesuai Filter)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
@@ -199,12 +202,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
    );
   }
 
-  Widget _buildWelcomeHeader(BuildContext context, double revenue) {
+    Widget _buildWelcomeHeader(BuildContext context, double revenue) {
     final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(isMobile ? 16 : 24, isMobile ? 24 : 56, isMobile ? 16 : 24, 24),
-      color: Colors.transparent,
+      padding: EdgeInsets.fromLTRB(isMobile ? 16 : 24, isMobile ? 32 : 56, isMobile ? 16 : 24, 32),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E3A8A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -212,62 +225,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  'Halo, ${widget.userName}',
-                  style: TextStyle(fontSize: isMobile ? 22 : 32, fontWeight: FontWeight.w800, color: const Color(0xFF111827), letterSpacing: -1.0),
-                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Selamat Datang,',
+                      style: TextStyle(fontSize: 14, color: Colors.blue.shade100, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.userName,
+                      style: TextStyle(fontSize: isMobile ? 26 : 36, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5),
+                    ),
+                  ]
+                )
               ),
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.print_outlined, color: Color(0xFF4B5563)),
-                    onPressed: () => _showPrintReportDialog(context),
-                    tooltip: 'Cetak Laporan',
+                  Container(
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    child: IconButton(
+                      icon: const Icon(Icons.print_outlined, color: Colors.white),
+                      onPressed: () => _showPrintReportDialog(context),
+                      tooltip: 'Cetak Laporan',
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.sync_outlined, color: Color(0xFF4B5563)),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sinkronisasi ke server...')));
-                    },
-                    tooltip: 'Sync Offline Data',
+                  Container(
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    child: IconButton(
+                      icon: const Icon(Icons.sync_outlined, color: Colors.white),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sinkronisasi ke server...')));
+                      },
+                      tooltip: 'Sync Offline Data',
+                    ),
                   ),
                 ],
               )
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Text('Ikhtisar performa:', style: TextStyle(fontSize: 16, color: Color(0xFF6B7280))),
-              const SizedBox(width: 12),
-              Container(
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-                child: DropdownButtonHideUnderline(
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withValues(alpha: 0.2))),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 18),
+                const SizedBox(width: 12),
+                const Text('Ikhtisar performa:', style: TextStyle(fontSize: 14, color: Colors.white70)),
+                const SizedBox(width: 12),
+                DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
+                    dropdownColor: const Color(0xFF1E3A8A),
                     value: ReportFilterState.availableFilters.contains(ReportFilterState.instance.currentFilter)
                         ? ReportFilterState.instance.currentFilter
                         : null,
                     hint: Text(
                       ReportFilterState.instance.displayLabel,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
-                    icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.white),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                     onChanged: (val) {
                       if (val != null) {
                         ReportFilterState.instance.setFilter(val);
                       }
                     },
                     items: ReportFilterState.availableFilters
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: Colors.white))))
                         .toList(),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -677,7 +709,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (data.isEmpty) {
       return Card(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           child: Center(
             child: Text('Belum ada transaksi hari ini.', style: TextStyle(color: Colors.grey.shade600)),
           ),
@@ -961,4 +993,7 @@ class _SummaryCard extends StatelessWidget {
     );
   }
 }
+
+
+
 
