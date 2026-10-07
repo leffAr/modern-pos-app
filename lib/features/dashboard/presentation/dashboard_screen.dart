@@ -242,7 +242,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
-          isMobile ? 16 : 24, isMobile ? 32 : 56, isMobile ? 16 : 24, 32),
+          isMobile ? 16 : 24, isMobile ? 32 : 56, isMobile ? 16 : 24, 72),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF0056D2), Color(0xFF009DFF)],
