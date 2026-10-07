@@ -316,20 +316,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 32),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.2))),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.calendar_today_outlined,
-                    color: Colors.white70, size: 18),
-                const SizedBox(width: 12),
+                    color: Colors.white70, size: 14),
+                const SizedBox(width: 8),
                 const Text('Ikhtisar performa:',
-                    style: TextStyle(fontSize: 14, color: Colors.white70)),
-                const SizedBox(width: 12),
+                    style: TextStyle(fontSize: 12, color: Colors.white70)),
+                const SizedBox(width: 8),
                 DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     dropdownColor: const Color(0xFF007BFF),
@@ -345,7 +345,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           color: Colors.white),
                     ),
                     icon: const Icon(Icons.keyboard_arrow_down,
-                        size: 18, color: Colors.white),
+                        size: 16, color: Colors.white),
                     style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -882,7 +882,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade100, width: 2),
         boxShadow: [
           BoxShadow(
@@ -927,7 +927,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: Colors.blueAccent,
                             fontWeight: FontWeight.bold)),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Text(entry.key,
                       style: const TextStyle(
                           fontWeight: FontWeight.w600,
@@ -1167,7 +1167,7 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFF3F4F6)),
         boxShadow: [
           BoxShadow(
