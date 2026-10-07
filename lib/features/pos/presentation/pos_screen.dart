@@ -1638,7 +1638,7 @@ class _ProductCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        stock > 0 ? 'final stock $unit' : 'Habis',
+                        stock > 0 ? '$stock $unit' : 'Habis',
                         style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
