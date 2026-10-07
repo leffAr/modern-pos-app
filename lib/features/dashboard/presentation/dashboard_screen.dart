@@ -267,7 +267,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text(
                       'Selamat Datang,',
                       style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Colors.blue.shade100,
                           fontWeight: FontWeight.w500),
                     ),
@@ -316,19 +316,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 32),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
             decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.2))),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.calendar_today_outlined,
                     color: Colors.white70, size: 14),
-                const SizedBox(width: 8),
-                const Text('Ikhtisar performa:',
-                    style: TextStyle(fontSize: 12, color: Colors.white70)),
                 const SizedBox(width: 8),
                 DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
@@ -340,14 +337,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     hint: Text(
                       ReportFilterState.instance.displayLabel,
                       style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: Colors.white),
                     ),
                     icon: const Icon(Icons.keyboard_arrow_down,
-                        size: 16, color: Colors.white),
+                        size: 14, color: Colors.white),
                     style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: Colors.white),
                     onChanged: (val) {
@@ -449,7 +446,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.blue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Icon(Icons.show_chart,
                           color: Colors.blueAccent, size: 20),
@@ -730,7 +727,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   title: Text(product.name,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14)),
+                          fontWeight: FontWeight.w600, fontSize: 12)),
                   subtitle: Text('SKU: ${product.sku ?? '-'}',
                       style:
                           TextStyle(color: Colors.grey.shade600, fontSize: 12)),
@@ -745,7 +742,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       'Sisa: ${inv.stock}',
                       style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Colors.red),
                     ),
                   ),
@@ -810,7 +807,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               title: Text(tx.receiptNumber,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14)),
+                      fontWeight: FontWeight.w600, fontSize: 12)),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -882,7 +879,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: Colors.grey.shade100, width: 2),
         boxShadow: [
           BoxShadow(
@@ -931,7 +928,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(entry.key,
                       style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Color(0xFF111827))),
                 ],
               )),
@@ -1167,7 +1164,7 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: const Color(0xFFF3F4F6)),
         boxShadow: [
           BoxShadow(
