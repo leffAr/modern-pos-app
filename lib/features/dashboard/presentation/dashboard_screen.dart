@@ -245,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           isMobile ? 16 : 24, isMobile ? 32 : 56, isMobile ? 16 : 24, 32),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E3A8A)],
+          colors: [Color(0xFF0056D2), Color(0xFF009DFF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -332,7 +332,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 12),
                 DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    dropdownColor: const Color(0xFF1E3A8A),
+                    dropdownColor: const Color(0xFF007BFF),
                     value: ReportFilterState.availableFilters
                             .contains(ReportFilterState.instance.currentFilter)
                         ? ReportFilterState.instance.currentFilter
