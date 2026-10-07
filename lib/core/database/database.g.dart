@@ -39,6 +39,12 @@ class $BusinessesTable extends Businesses
   late final GeneratedColumn<String> logoBase64 = GeneratedColumn<String>(
       'logo_base64', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _qrisBase64Meta =
+      const VerificationMeta('qrisBase64');
+  @override
+  late final GeneratedColumn<String> qrisBase64 = GeneratedColumn<String>(
+      'qris_base64', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _taxPercentageMeta =
       const VerificationMeta('taxPercentage');
   @override
@@ -74,6 +80,7 @@ class $BusinessesTable extends Businesses
         address,
         phone,
         logoBase64,
+        qrisBase64,
         taxPercentage,
         enableTableNumber,
         enableQueueNumber
@@ -113,6 +120,12 @@ class $BusinessesTable extends Businesses
           logoBase64.isAcceptableOrUnknown(
               data['logo_base64']!, _logoBase64Meta));
     }
+    if (data.containsKey('qris_base64')) {
+      context.handle(
+          _qrisBase64Meta,
+          qrisBase64.isAcceptableOrUnknown(
+              data['qris_base64']!, _qrisBase64Meta));
+    }
     if (data.containsKey('tax_percentage')) {
       context.handle(
           _taxPercentageMeta,
@@ -150,6 +163,8 @@ class $BusinessesTable extends Businesses
           .read(DriftSqlType.string, data['${effectivePrefix}phone']),
       logoBase64: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}logo_base64']),
+      qrisBase64: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}qris_base64']),
       taxPercentage: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}tax_percentage'])!,
       enableTableNumber: attachedDatabase.typeMapping.read(
@@ -171,6 +186,7 @@ class Business extends DataClass implements Insertable<Business> {
   final String? address;
   final String? phone;
   final String? logoBase64;
+  final String? qrisBase64;
   final double taxPercentage;
   final bool enableTableNumber;
   final bool enableQueueNumber;
@@ -180,6 +196,7 @@ class Business extends DataClass implements Insertable<Business> {
       this.address,
       this.phone,
       this.logoBase64,
+      this.qrisBase64,
       required this.taxPercentage,
       required this.enableTableNumber,
       required this.enableQueueNumber});
@@ -196,6 +213,9 @@ class Business extends DataClass implements Insertable<Business> {
     }
     if (!nullToAbsent || logoBase64 != null) {
       map['logo_base64'] = Variable<String>(logoBase64);
+    }
+    if (!nullToAbsent || qrisBase64 != null) {
+      map['qris_base64'] = Variable<String>(qrisBase64);
     }
     map['tax_percentage'] = Variable<double>(taxPercentage);
     map['enable_table_number'] = Variable<bool>(enableTableNumber);
@@ -215,6 +235,9 @@ class Business extends DataClass implements Insertable<Business> {
       logoBase64: logoBase64 == null && nullToAbsent
           ? const Value.absent()
           : Value(logoBase64),
+      qrisBase64: qrisBase64 == null && nullToAbsent
+          ? const Value.absent()
+          : Value(qrisBase64),
       taxPercentage: Value(taxPercentage),
       enableTableNumber: Value(enableTableNumber),
       enableQueueNumber: Value(enableQueueNumber),
@@ -230,6 +253,7 @@ class Business extends DataClass implements Insertable<Business> {
       address: serializer.fromJson<String?>(json['address']),
       phone: serializer.fromJson<String?>(json['phone']),
       logoBase64: serializer.fromJson<String?>(json['logoBase64']),
+      qrisBase64: serializer.fromJson<String?>(json['qrisBase64']),
       taxPercentage: serializer.fromJson<double>(json['taxPercentage']),
       enableTableNumber: serializer.fromJson<bool>(json['enableTableNumber']),
       enableQueueNumber: serializer.fromJson<bool>(json['enableQueueNumber']),
@@ -244,6 +268,7 @@ class Business extends DataClass implements Insertable<Business> {
       'address': serializer.toJson<String?>(address),
       'phone': serializer.toJson<String?>(phone),
       'logoBase64': serializer.toJson<String?>(logoBase64),
+      'qrisBase64': serializer.toJson<String?>(qrisBase64),
       'taxPercentage': serializer.toJson<double>(taxPercentage),
       'enableTableNumber': serializer.toJson<bool>(enableTableNumber),
       'enableQueueNumber': serializer.toJson<bool>(enableQueueNumber),
@@ -256,6 +281,7 @@ class Business extends DataClass implements Insertable<Business> {
           Value<String?> address = const Value.absent(),
           Value<String?> phone = const Value.absent(),
           Value<String?> logoBase64 = const Value.absent(),
+          Value<String?> qrisBase64 = const Value.absent(),
           double? taxPercentage,
           bool? enableTableNumber,
           bool? enableQueueNumber}) =>
@@ -265,6 +291,7 @@ class Business extends DataClass implements Insertable<Business> {
         address: address.present ? address.value : this.address,
         phone: phone.present ? phone.value : this.phone,
         logoBase64: logoBase64.present ? logoBase64.value : this.logoBase64,
+        qrisBase64: qrisBase64.present ? qrisBase64.value : this.qrisBase64,
         taxPercentage: taxPercentage ?? this.taxPercentage,
         enableTableNumber: enableTableNumber ?? this.enableTableNumber,
         enableQueueNumber: enableQueueNumber ?? this.enableQueueNumber,
@@ -277,6 +304,8 @@ class Business extends DataClass implements Insertable<Business> {
       phone: data.phone.present ? data.phone.value : this.phone,
       logoBase64:
           data.logoBase64.present ? data.logoBase64.value : this.logoBase64,
+      qrisBase64:
+          data.qrisBase64.present ? data.qrisBase64.value : this.qrisBase64,
       taxPercentage: data.taxPercentage.present
           ? data.taxPercentage.value
           : this.taxPercentage,
@@ -297,6 +326,7 @@ class Business extends DataClass implements Insertable<Business> {
           ..write('address: $address, ')
           ..write('phone: $phone, ')
           ..write('logoBase64: $logoBase64, ')
+          ..write('qrisBase64: $qrisBase64, ')
           ..write('taxPercentage: $taxPercentage, ')
           ..write('enableTableNumber: $enableTableNumber, ')
           ..write('enableQueueNumber: $enableQueueNumber')
@@ -306,7 +336,7 @@ class Business extends DataClass implements Insertable<Business> {
 
   @override
   int get hashCode => Object.hash(id, name, address, phone, logoBase64,
-      taxPercentage, enableTableNumber, enableQueueNumber);
+      qrisBase64, taxPercentage, enableTableNumber, enableQueueNumber);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -316,6 +346,7 @@ class Business extends DataClass implements Insertable<Business> {
           other.address == this.address &&
           other.phone == this.phone &&
           other.logoBase64 == this.logoBase64 &&
+          other.qrisBase64 == this.qrisBase64 &&
           other.taxPercentage == this.taxPercentage &&
           other.enableTableNumber == this.enableTableNumber &&
           other.enableQueueNumber == this.enableQueueNumber);
@@ -327,6 +358,7 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
   final Value<String?> address;
   final Value<String?> phone;
   final Value<String?> logoBase64;
+  final Value<String?> qrisBase64;
   final Value<double> taxPercentage;
   final Value<bool> enableTableNumber;
   final Value<bool> enableQueueNumber;
@@ -337,6 +369,7 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
     this.address = const Value.absent(),
     this.phone = const Value.absent(),
     this.logoBase64 = const Value.absent(),
+    this.qrisBase64 = const Value.absent(),
     this.taxPercentage = const Value.absent(),
     this.enableTableNumber = const Value.absent(),
     this.enableQueueNumber = const Value.absent(),
@@ -348,6 +381,7 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
     this.address = const Value.absent(),
     this.phone = const Value.absent(),
     this.logoBase64 = const Value.absent(),
+    this.qrisBase64 = const Value.absent(),
     this.taxPercentage = const Value.absent(),
     this.enableTableNumber = const Value.absent(),
     this.enableQueueNumber = const Value.absent(),
@@ -360,6 +394,7 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
     Expression<String>? address,
     Expression<String>? phone,
     Expression<String>? logoBase64,
+    Expression<String>? qrisBase64,
     Expression<double>? taxPercentage,
     Expression<bool>? enableTableNumber,
     Expression<bool>? enableQueueNumber,
@@ -371,6 +406,7 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
       if (address != null) 'address': address,
       if (phone != null) 'phone': phone,
       if (logoBase64 != null) 'logo_base64': logoBase64,
+      if (qrisBase64 != null) 'qris_base64': qrisBase64,
       if (taxPercentage != null) 'tax_percentage': taxPercentage,
       if (enableTableNumber != null) 'enable_table_number': enableTableNumber,
       if (enableQueueNumber != null) 'enable_queue_number': enableQueueNumber,
@@ -384,6 +420,7 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
       Value<String?>? address,
       Value<String?>? phone,
       Value<String?>? logoBase64,
+      Value<String?>? qrisBase64,
       Value<double>? taxPercentage,
       Value<bool>? enableTableNumber,
       Value<bool>? enableQueueNumber,
@@ -394,6 +431,7 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
       address: address ?? this.address,
       phone: phone ?? this.phone,
       logoBase64: logoBase64 ?? this.logoBase64,
+      qrisBase64: qrisBase64 ?? this.qrisBase64,
       taxPercentage: taxPercentage ?? this.taxPercentage,
       enableTableNumber: enableTableNumber ?? this.enableTableNumber,
       enableQueueNumber: enableQueueNumber ?? this.enableQueueNumber,
@@ -419,6 +457,9 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
     if (logoBase64.present) {
       map['logo_base64'] = Variable<String>(logoBase64.value);
     }
+    if (qrisBase64.present) {
+      map['qris_base64'] = Variable<String>(qrisBase64.value);
+    }
     if (taxPercentage.present) {
       map['tax_percentage'] = Variable<double>(taxPercentage.value);
     }
@@ -442,6 +483,7 @@ class BusinessesCompanion extends UpdateCompanion<Business> {
           ..write('address: $address, ')
           ..write('phone: $phone, ')
           ..write('logoBase64: $logoBase64, ')
+          ..write('qrisBase64: $qrisBase64, ')
           ..write('taxPercentage: $taxPercentage, ')
           ..write('enableTableNumber: $enableTableNumber, ')
           ..write('enableQueueNumber: $enableQueueNumber, ')
@@ -9041,6 +9083,7 @@ typedef $$BusinessesTableCreateCompanionBuilder = BusinessesCompanion Function({
   Value<String?> address,
   Value<String?> phone,
   Value<String?> logoBase64,
+  Value<String?> qrisBase64,
   Value<double> taxPercentage,
   Value<bool> enableTableNumber,
   Value<bool> enableQueueNumber,
@@ -9052,6 +9095,7 @@ typedef $$BusinessesTableUpdateCompanionBuilder = BusinessesCompanion Function({
   Value<String?> address,
   Value<String?> phone,
   Value<String?> logoBase64,
+  Value<String?> qrisBase64,
   Value<double> taxPercentage,
   Value<bool> enableTableNumber,
   Value<bool> enableQueueNumber,
@@ -9146,6 +9190,9 @@ class $$BusinessesTableFilterComposer
 
   ColumnFilters<String> get logoBase64 => $composableBuilder(
       column: $table.logoBase64, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get qrisBase64 => $composableBuilder(
+      column: $table.qrisBase64, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get taxPercentage => $composableBuilder(
       column: $table.taxPercentage, builder: (column) => ColumnFilters(column));
@@ -9267,6 +9314,9 @@ class $$BusinessesTableOrderingComposer
   ColumnOrderings<String> get logoBase64 => $composableBuilder(
       column: $table.logoBase64, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get qrisBase64 => $composableBuilder(
+      column: $table.qrisBase64, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<double> get taxPercentage => $composableBuilder(
       column: $table.taxPercentage,
       builder: (column) => ColumnOrderings(column));
@@ -9303,6 +9353,9 @@ class $$BusinessesTableAnnotationComposer
 
   GeneratedColumn<String> get logoBase64 => $composableBuilder(
       column: $table.logoBase64, builder: (column) => column);
+
+  GeneratedColumn<String> get qrisBase64 => $composableBuilder(
+      column: $table.qrisBase64, builder: (column) => column);
 
   GeneratedColumn<double> get taxPercentage => $composableBuilder(
       column: $table.taxPercentage, builder: (column) => column);
@@ -9430,6 +9483,7 @@ class $$BusinessesTableTableManager extends RootTableManager<
             Value<String?> address = const Value.absent(),
             Value<String?> phone = const Value.absent(),
             Value<String?> logoBase64 = const Value.absent(),
+            Value<String?> qrisBase64 = const Value.absent(),
             Value<double> taxPercentage = const Value.absent(),
             Value<bool> enableTableNumber = const Value.absent(),
             Value<bool> enableQueueNumber = const Value.absent(),
@@ -9441,6 +9495,7 @@ class $$BusinessesTableTableManager extends RootTableManager<
             address: address,
             phone: phone,
             logoBase64: logoBase64,
+            qrisBase64: qrisBase64,
             taxPercentage: taxPercentage,
             enableTableNumber: enableTableNumber,
             enableQueueNumber: enableQueueNumber,
@@ -9452,6 +9507,7 @@ class $$BusinessesTableTableManager extends RootTableManager<
             Value<String?> address = const Value.absent(),
             Value<String?> phone = const Value.absent(),
             Value<String?> logoBase64 = const Value.absent(),
+            Value<String?> qrisBase64 = const Value.absent(),
             Value<double> taxPercentage = const Value.absent(),
             Value<bool> enableTableNumber = const Value.absent(),
             Value<bool> enableQueueNumber = const Value.absent(),
@@ -9463,6 +9519,7 @@ class $$BusinessesTableTableManager extends RootTableManager<
             address: address,
             phone: phone,
             logoBase64: logoBase64,
+            qrisBase64: qrisBase64,
             taxPercentage: taxPercentage,
             enableTableNumber: enableTableNumber,
             enableQueueNumber: enableQueueNumber,

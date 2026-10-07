@@ -7,6 +7,7 @@ class Businesses extends Table {
   TextColumn get address => text().nullable()();
   TextColumn get phone => text().nullable()();
   TextColumn get logoBase64 => text().nullable()(); // Logo dalam bentuk base64
+  TextColumn get qrisBase64 => text().nullable()(); // QRIS image
   RealColumn get taxPercentage => real().withDefault(const Constant(0.0))(); // Pajak PPN misal 11%
   BoolColumn get enableTableNumber => boolean().withDefault(const Constant(false))();
   BoolColumn get enableQueueNumber => boolean().withDefault(const Constant(false))();

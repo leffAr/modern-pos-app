@@ -25,6 +25,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   final _phoneCtrl = TextEditingController();
 
   String? _logoBase64;
+  String? _qrisBase64;
   double _taxPercentage = 0.0;
   bool _enableTableNumber = false;
   bool _enableQueueNumber = false;
@@ -45,6 +46,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
         _addressCtrl.text = business.address ?? '';
         _phoneCtrl.text = business.phone ?? '';
         _logoBase64 = business.logoBase64;
+        _qrisBase64 = business.qrisBase64;
         _taxPercentage = business.taxPercentage;
         _enableTableNumber = business.enableTableNumber;
         _enableQueueNumber = business.enableQueueNumber;
@@ -62,9 +64,28 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
 
   bool _isProcessingLogo = false;
 
+  bool _isProcessingQris = false;
+  Future<void> _pickQris() async {
+    try {
+      final base64 = await WebImagePicker.pickImageAsBase64();
+      if (base64 != null) {
+        setState(() {
+          _qrisBase64 = base64;
+          _isProcessingQris = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessingQris = false;
+      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal memproses QRIS: $e')));
+    }
+  }
+
   Future<void> _pickLogo() async {
     try {
-      // Pemilihan dan kompresi (resize) gambar sudah dilakukan secara instan 
+      // Pemilihan dan kompresi (resize) gambar sudah dilakukan secara instan
       // oleh HTML5 Canvas di dalam WebImagePicker.pickImageAsBase64()
       final base64 = await WebImagePicker.pickImageAsBase64();
       if (base64 != null) {
@@ -75,7 +96,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
       }
     } catch (e) {
       setState(() {
-          _isProcessingLogo = false;
+        _isProcessingLogo = false;
       });
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Gagal memproses gambar: $e')));
@@ -99,6 +120,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
                 address: drift.Value(_addressCtrl.text),
                 phone: drift.Value(_phoneCtrl.text),
                 logoBase64: drift.Value(_logoBase64),
+                qrisBase64: drift.Value(_qrisBase64),
                 taxPercentage: drift.Value(_taxPercentage),
                 enableTableNumber: drift.Value(_enableTableNumber),
                 enableQueueNumber: drift.Value(_enableQueueNumber),
@@ -114,13 +136,14 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
             address: drift.Value(_addressCtrl.text),
             phone: drift.Value(_phoneCtrl.text),
             logoBase64: drift.Value(_logoBase64),
+            qrisBase64: drift.Value(_qrisBase64),
             taxPercentage: drift.Value(_taxPercentage),
             enableTableNumber: drift.Value(_enableTableNumber),
             enableQueueNumber: drift.Value(_enableQueueNumber),
           ),
         );
       }
-      
+
       // Simpan logo ke SharedPreferences agar bisa dibaca oleh index.html (saat loading)
       final prefs = await SharedPreferences.getInstance();
       if (_logoBase64 != null) {
@@ -141,20 +164,21 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
 
   Future<void> _resetTransactionData() async {
     final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        String inputStr = "";
-        return StatefulBuilder(
-          builder: (context, setState) {
+        context: context,
+        builder: (context) {
+          String inputStr = "";
+          return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
               title: const Text('Hapus Riwayat Transaksi?'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Tindakan ini akan menghapus PERMANEN seluruh riwayat Penjualan, Pembayaran, dan Shift Kasir hari ini dan sebelumnya.\n\nData Produk dan Pengaturan Toko TIDAK akan dihapus.'),
+                  const Text(
+                      'Tindakan ini akan menghapus PERMANEN seluruh riwayat Penjualan, Pembayaran, dan Shift Kasir hari ini dan sebelumnya.\n\nData Produk dan Pengaturan Toko TIDAK akan dihapus.'),
                   const SizedBox(height: 16),
-                  const Text('Untuk mengonfirmasi, ketik "HAPUS" di bawah ini:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Untuk mengonfirmasi, ketik "HAPUS" di bawah ini:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   TextField(
                     onChanged: (val) => setState(() => inputStr = val),
@@ -172,16 +196,16 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
                     child: const Text('Batal')),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: inputStr.trim().toUpperCase() == "HAPUS" ? () => Navigator.pop(context, true) : null,
+                  onPressed: inputStr.trim().toUpperCase() == "HAPUS"
+                      ? () => Navigator.pop(context, true)
+                      : null,
                   icon: const Icon(Icons.delete_forever),
                   label: const Text('Ya, Hapus Semua'),
                 ),
               ],
             );
-          }
-        );
-      }
-    );
+          });
+        });
 
     if (confirm == true) {
       if (mounted)
@@ -249,6 +273,10 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
                               ),
                               const SizedBox(height: 32),
                               _buildLogoPicker(),
+                              const SizedBox(height: 24),
+                              _buildQrisPicker(),
+                              const SizedBox(height: 24),
+                              _buildQrisPicker(),
                             ],
                           ),
                         ),
@@ -431,18 +459,28 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade300, width: 2, style: BorderStyle.solid),
+                border: Border.all(
+                    color: Colors.grey.shade300,
+                    width: 2,
+                    style: BorderStyle.solid),
               ),
               child: Stack(
                 children: [
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
-                      child: _isProcessingLogo 
+                      child: _isProcessingLogo
                           ? const Center(child: CircularProgressIndicator())
                           : _logoBase64 != null
-                          ? Image.memory(base64Decode(_logoBase64!), fit: BoxFit.contain, filterQuality: FilterQuality.high)
-                          : Image.asset('assets/images/logo_v3.png', fit: BoxFit.contain, filterQuality: FilterQuality.high, errorBuilder: (context, error, stackTrace) => const Icon(Icons.storefront, size: 60, color: Colors.blue)),
+                              ? Image.memory(base64Decode(_logoBase64!),
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high)
+                              : Image.asset('assets/images/logo_v3.png',
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.storefront,
+                                          size: 60, color: Colors.blue)),
                     ),
                   ),
                   Positioned(
@@ -470,7 +508,74 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
             child: TextButton.icon(
               onPressed: () => setState(() => _logoBase64 = null),
               icon: const Icon(Icons.delete, color: Colors.red, size: 18),
-              label: const Text('Hapus Logo', style: TextStyle(color: Colors.red)),
+              label:
+                  const Text('Hapus Logo', style: TextStyle(color: Colors.red)),
+            ),
+          )
+        ],
+      ],
+    );
+  }
+
+  Widget _buildQrisPicker() {
+    return Column(
+      children: [
+        Center(
+          child: GestureDetector(
+            onTap: _pickQris,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: Colors.grey.shade300,
+                    width: 2,
+                    style: BorderStyle.solid),
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: _isProcessingQris
+                          ? const Center(child: CircularProgressIndicator())
+                          : _qrisBase64 != null
+                              ? Image.memory(base64Decode(_qrisBase64!),
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high)
+                              : const Icon(Icons.qr_code_2,
+                                  size: 60, color: Colors.blue),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      color: Colors.black54,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: const Text(
+                        'Upload QRIS',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_qrisBase64 != null) ...[
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              onPressed: () => setState(() => _qrisBase64 = null),
+              icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+              label:
+                  const Text('Hapus QRIS', style: TextStyle(color: Colors.red)),
             ),
           )
         ],
@@ -520,7 +625,8 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
             children: [
               SwitchListTile(
                 title: const Text('Aktifkan Pajak PPN (11%)'),
-                subtitle: const Text('Pajak akan otomatis dihitung di layar Kasir dan Struk.'),
+                subtitle: const Text(
+                    'Pajak akan otomatis dihitung di layar Kasir dan Struk.'),
                 secondary: const Icon(Icons.account_balance_wallet),
                 value: _taxPercentage > 0,
                 onChanged: (val) {
@@ -532,7 +638,8 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
               const Divider(height: 1),
               SwitchListTile(
                 title: const Text('Aktifkan Nomor Meja / Nama Pemesan'),
-                subtitle: const Text('Kasir akan diminta mengisi Nomor Meja/Nama saat checkout.'),
+                subtitle: const Text(
+                    'Kasir akan diminta mengisi Nomor Meja/Nama saat checkout.'),
                 secondary: const Icon(Icons.table_restaurant),
                 value: _enableTableNumber,
                 onChanged: (val) => setState(() => _enableTableNumber = val),
@@ -540,7 +647,8 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
               const Divider(height: 1),
               SwitchListTile(
                 title: const Text('Aktifkan Nomor Antrian Otomatis'),
-                subtitle: const Text('Nomor antrian tercetak di struk dan ter-reset setiap hari (00:00).'),
+                subtitle: const Text(
+                    'Nomor antrian tercetak di struk dan ter-reset setiap hari (00:00).'),
                 secondary: const Icon(Icons.numbers),
                 value: _enableQueueNumber,
                 onChanged: (val) => setState(() => _enableQueueNumber = val),

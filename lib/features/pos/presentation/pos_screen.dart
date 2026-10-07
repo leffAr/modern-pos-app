@@ -45,6 +45,7 @@ class _POSScreenState extends State<POSScreen> {
   }
 
   double _taxPercentage = 0.0;
+  String? _qrisBase64;
   double get _tax => (_subtotal - _discountAmount) * (_taxPercentage / 100);
   double get _grandTotal => (_subtotal - _discountAmount) + _tax;
 
@@ -81,6 +82,7 @@ class _POSScreenState extends State<POSScreen> {
       if (biz != null && mounted) {
         setState(() {
           _taxPercentage = biz.taxPercentage;
+          _qrisBase64 = biz.qrisBase64;
         });
       }
     });
@@ -1603,7 +1605,8 @@ Simpan pesan ini sebagai struk digital Anda.''';
                   itemBuilder: (context, index) {
                     final item = _cartItems[index];
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: Row(
                         children: [
                           Expanded(
@@ -1616,7 +1619,8 @@ Simpan pesan ini sebagai struk digital Anda.''';
                                         : item['name'],
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold)),
                                 Text(
                                     'Rp ${NumberFormat('#,###', 'id_ID').format(item['price'].toInt())} x ${item['qty']}${item['isWholesale'] == true ? '\n(Harga Grosir)' : ''}',
                                     style: TextStyle(
@@ -1634,8 +1638,8 @@ Simpan pesan ini sebagai struk digital Anda.''';
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                     'Rp ${NumberFormat('#,###', 'id_ID').format((item['price'] * item['qty']).toInt())}',
-                                    style:
-                                        const TextStyle(fontWeight: FontWeight.bold)),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ),
