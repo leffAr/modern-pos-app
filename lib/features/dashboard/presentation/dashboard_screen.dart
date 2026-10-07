@@ -196,22 +196,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   const SizedBox(height: 32),
                                   _buildSalesChart(filteredResults, range),
                                   const SizedBox(height: 32),
-                                  const Text('Performa Kasir (Sesuai Filter)',
+                                  const Text('Akses Cepat',
                                       style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
                                           color: Color(0xFF111827))),
                                   const SizedBox(height: 16),
-                                  _buildCashierPerformanceCard(
-                                      cashierPerformance),
-                                  const SizedBox(height: 32),
-                                  const Text('Peringatan Stok Tipis',
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.red)),
-                                  const SizedBox(height: 16),
-                                  _buildLowStockAlert(),
+                                  Row(
+                                    children: [
+                                      _buildQuickActionIcon(
+                                        context: context,
+                                        icon: Icons.people_outline,
+                                        color: Colors.blue,
+                                        title: 'Performa Kasir',
+                                        onTap: () {
+                                          showModalBottomSheet(
+                                            context: context,
+                                            isScrollControlled: true,
+                                            backgroundColor: Colors.transparent,
+                                            builder: (context) =>
+                                                _buildBottomSheetLayout(
+                                                    context,
+                                                    'Performa Kasir (Sesuai Filter)',
+                                                    _buildCashierPerformanceCard(
+                                                        cashierPerformance)),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(width: 16),
+                                      _buildQuickActionIcon(
+                                        context: context,
+                                        icon: Icons.warning_amber_rounded,
+                                        color: Colors.red,
+                                        title: 'Stok Tipis',
+                                        onTap: () {
+                                          showModalBottomSheet(
+                                            context: context,
+                                            isScrollControlled: true,
+                                            backgroundColor: Colors.transparent,
+                                            builder: (context) =>
+                                                _buildBottomSheetLayout(
+                                                    context,
+                                                    'Peringatan Stok Tipis',
+                                                    _buildLowStockAlert()),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ],
                                 const SizedBox(height: 32),
                                 const Text('Histori Transaksi Terkini',
@@ -1144,6 +1176,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
   }
+}
+
+Widget _buildQuickActionIcon({
+  required BuildContext context,
+  required IconData icon,
+  required Color color,
+  required String title,
+  required VoidCallback onTap,
+}) {
+  return Expanded(
+    child: GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 36, color: color),
+            const SizedBox(height: 12),
+            Text(title,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                    fontSize: 13)),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildBottomSheetLayout(
+    BuildContext context, String title, Widget content) {
+  return DraggableScrollableSheet(
+    initialChildSize: 0.6,
+    minChildSize: 0.4,
+    maxChildSize: 0.9,
+    expand: false,
+    builder: (_, controller) => Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 48,
+              height: 6,
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(3)),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          Expanded(
+              child: SingleChildScrollView(
+                  controller: controller, child: content)),
+        ],
+      ),
+    ),
+  );
 }
 
 class _SummaryCard extends StatelessWidget {
