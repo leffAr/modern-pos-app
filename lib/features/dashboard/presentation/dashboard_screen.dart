@@ -232,80 +232,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           fontWeight: FontWeight.bold,
                                           color: Color(0xFF111827))),
                                   const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      _buildQuickActionIcon(
-                                        context: context,
-                                        icon: Icons.people_outline,
-                                        color: Colors.blue,
-                                        title: 'Performa Kasir',
-                                        onTap: () {
-                                          showModalBottomSheet(
+                                  Center(
+                                    child: ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 600),
+                                      child: Row(
+                                        children: [
+                                          _buildQuickActionIcon(
                                             context: context,
-                                            isScrollControlled: true,
-                                            backgroundColor: Colors.transparent,
-                                            builder: (context) =>
-                                                _buildBottomSheetLayout(
-                                                    context,
-                                                    'Performa Kasir (Sesuai Filter)',
-                                                    _buildCashierPerformanceCard(
-                                                        cashierPerformance)),
-                                          );
-                                        },
-                                      ),
-                                      const SizedBox(width: 16),
-                                      StreamBuilder<List<drift.TypedResult>>(
-                                          stream: _lowStockStream,
-                                          builder: (context, snapshot) {
-                                            final lowStockCount =
-                                                snapshot.hasData
-                                                    ? snapshot.data!.length
-                                                    : 0;
-                                            if (snapshot.hasData) {
-                                              _checkLowStockNotification(
-                                                  lowStockCount);
-                                            }
-                                            return _buildQuickActionIcon(
-                                              context: context,
-                                              icon: Icons.warning_amber_rounded,
-                                              color: Colors.red,
-                                              title: 'Stok Tipis',
-                                              badge: lowStockCount > 0
-                                                  ? Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              8),
-                                                      decoration:
-                                                          const BoxDecoration(
-                                                        color: Colors.red,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: Text(
-                                                        '$lowStockCount',
-                                                        style: const TextStyle(
-                                                            color: Colors.white,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 16),
-                                                      ),
-                                                    )
-                                                  : null,
-                                              onTap: () {
-                                                showModalBottomSheet(
+                                            icon: Icons.people_outline,
+                                            color: Colors.blue,
+                                            title: 'Performa Kasir',
+                                            onTap: () {
+                                              showModalBottomSheet(
+                                                context: context,
+                                                isScrollControlled: true,
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                                builder: (context) =>
+                                                    _buildBottomSheetLayout(
+                                                        context,
+                                                        'Performa Kasir (Sesuai Filter)',
+                                                        _buildCashierPerformanceCard(
+                                                            cashierPerformance)),
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(width: 16),
+                                          StreamBuilder<
+                                                  List<drift.TypedResult>>(
+                                              stream: _lowStockStream,
+                                              builder: (context, snapshot) {
+                                                final lowStockCount =
+                                                    snapshot.hasData
+                                                        ? snapshot.data!.length
+                                                        : 0;
+                                                if (snapshot.hasData) {
+                                                  _checkLowStockNotification(
+                                                      lowStockCount);
+                                                }
+                                                return _buildQuickActionIcon(
                                                   context: context,
-                                                  isScrollControlled: true,
-                                                  backgroundColor:
-                                                      Colors.transparent,
-                                                  builder: (context) =>
-                                                      _buildBottomSheetLayout(
-                                                          context,
-                                                          'Peringatan Stok Tipis',
-                                                          _buildLowStockAlert()),
+                                                  icon: Icons
+                                                      .warning_amber_rounded,
+                                                  color: Colors.red,
+                                                  title: 'Stok Tipis',
+                                                  badge: lowStockCount > 0
+                                                      ? Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .all(8),
+                                                          decoration:
+                                                              const BoxDecoration(
+                                                            color: Colors.red,
+                                                            shape:
+                                                                BoxShape.circle,
+                                                          ),
+                                                          child: Text(
+                                                            '$lowStockCount',
+                                                            style: const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 16),
+                                                          ),
+                                                        )
+                                                      : null,
+                                                  onTap: () {
+                                                    showModalBottomSheet(
+                                                      context: context,
+                                                      isScrollControlled: true,
+                                                      backgroundColor:
+                                                          Colors.transparent,
+                                                      builder: (context) =>
+                                                          _buildBottomSheetLayout(
+                                                              context,
+                                                              'Peringatan Stok Tipis',
+                                                              _buildLowStockAlert()),
+                                                    );
+                                                  },
                                                 );
-                                              },
-                                            );
-                                          }),
-                                    ],
+                                              }),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ],
                                 const SizedBox(height: 32),
@@ -1250,6 +1262,7 @@ Widget _buildQuickActionIcon({
   Widget? badge,
 }) {
   final iconWidget = Container(
+    width: double.infinity,
     padding: const EdgeInsets.symmetric(vertical: 24),
     decoration: BoxDecoration(
       color: Colors.white,
