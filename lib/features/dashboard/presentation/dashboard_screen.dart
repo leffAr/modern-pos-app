@@ -22,6 +22,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Stream<List<Expense>> _expensesStream;
   late Stream<List<DebtPayment>> _debtPaymentsStream;
   late Stream<List<drift.TypedResult>> _lowStockStream;
+  bool _hasShownLowStockNotification = false;
+
+  void _checkLowStockNotification(int count) {
+    if (!_hasShownLowStockNotification && count > 0 && mounted) {
+      _hasShownLowStockNotification = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: Text(
+                          'Peringatan: Ada $count produk yang stoknya menipis!')),
+                ],
+              ),
+              backgroundColor: Colors.red.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+          );
+        }
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -224,24 +254,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         },
                                       ),
                                       const SizedBox(width: 16),
-                                      _buildQuickActionIcon(
-                                        context: context,
-                                        icon: Icons.warning_amber_rounded,
-                                        color: Colors.red,
-                                        title: 'Stok Tipis',
-                                        onTap: () {
-                                          showModalBottomSheet(
-                                            context: context,
-                                            isScrollControlled: true,
-                                            backgroundColor: Colors.transparent,
-                                            builder: (context) =>
-                                                _buildBottomSheetLayout(
-                                                    context,
-                                                    'Peringatan Stok Tipis',
-                                                    _buildLowStockAlert()),
-                                          );
-                                        },
-                                      ),
+                                      StreamBuilder<List<drift.TypedResult>>(
+                                          stream: _lowStockStream,
+                                          builder: (context, snapshot) {
+                                            final lowStockCount =
+                                                snapshot.hasData
+                                                    ? snapshot.data!.length
+                                                    : 0;
+                                            if (snapshot.hasData) {
+                                              _checkLowStockNotification(
+                                                  lowStockCount);
+                                            }
+                                            return _buildQuickActionIcon(
+                                              context: context,
+                                              icon: Icons.warning_amber_rounded,
+                                              color: Colors.red,
+                                              title: 'Stok Tipis',
+                                              badge: lowStockCount > 0
+                                                  ? Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              8),
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                        color: Colors.red,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Text(
+                                                        '$lowStockCount',
+                                                        style: const TextStyle(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 16),
+                                                      ),
+                                                    )
+                                                  : null,
+                                              onTap: () {
+                                                showModalBottomSheet(
+                                                  context: context,
+                                                  isScrollControlled: true,
+                                                  backgroundColor:
+                                                      Colors.transparent,
+                                                  builder: (context) =>
+                                                      _buildBottomSheetLayout(
+                                                          context,
+                                                          'Peringatan Stok Tipis',
+                                                          _buildLowStockAlert()),
+                                                );
+                                              },
+                                            );
+                                          }),
                                     ],
                                   ),
                                 ],
@@ -1184,37 +1247,52 @@ Widget _buildQuickActionIcon({
   required Color color,
   required String title,
   required VoidCallback onTap,
+  Widget? badge,
 }) {
+  final iconWidget = Container(
+    padding: const EdgeInsets.symmetric(vertical: 24),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: color.withOpacity(0.1),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        )
+      ],
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 36, color: color),
+        const SizedBox(height: 12),
+        Text(title,
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+                fontSize: 13)),
+      ],
+    ),
+  );
+
   return Expanded(
     child: GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: badge != null
+          ? Stack(
+              clipBehavior: Clip.none,
+              children: [
+                iconWidget,
+                Positioned(
+                  top: -8,
+                  right: -8,
+                  child: badge,
+                ),
+              ],
             )
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 36, color: color),
-            const SizedBox(height: 12),
-            Text(title,
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
-                    fontSize: 13)),
-          ],
-        ),
-      ),
+          : iconWidget,
     ),
   );
 }
