@@ -527,14 +527,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         xIndex++;
       }
 
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: AspectRatio(
-            aspectRatio: constraints.maxWidth < 600 ? 1.2 : 3.0,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
+      return AspectRatio(
+        aspectRatio: constraints.maxWidth < 600 ? 1.2 : 3.5,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.grey.shade100, width: 2),
@@ -733,9 +730,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
+        );
   });
 }
 
