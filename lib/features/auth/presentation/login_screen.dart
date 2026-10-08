@@ -412,7 +412,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
 
     final leftContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center, // CENTERED
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         StreamBuilder<Business?>(
@@ -421,23 +421,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             builder: (context, snapshot) {
               final business = snapshot.data;
               return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center, // CENTERED
                 children: [
                   Text(
                     business?.name ?? 'Modern POS',
-                    style: const TextStyle(
-                        fontSize: 36,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 42,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                        color: Color(0xFF1F2937)),
+                        letterSpacing: 1.2,
+                        color: Colors.blue.shade900),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   const Text(
                     'Online inventory management system',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4B5563)),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: Color(0xFF6B7280)),
                   ),
                 ],
               );
@@ -499,11 +502,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   size: 250, color: Colors.blue.shade700),
                               const SizedBox(height: 24),
                               Text(
-                                'Modern POS',
+                                'MODERN POS',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 3.0,
                                   color: Colors.blue.shade900,
                                 ),
                               ),
