@@ -41,6 +41,7 @@ dependencies:
   print_bluetooth_thermal: ^1.2.5
   fl_chart: ^1.2.0
   flutter_image_compress: ^2.5.1
+  local_auth: ^3.0.2
 
 dev_dependencies:
   flutter_test:

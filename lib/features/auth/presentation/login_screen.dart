@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import '../../../core/utils/image_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
@@ -107,6 +108,90 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           const SnackBar(
               content: Text('Email/Username atau Password salah!'),
               backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _authenticateWithBiometrics() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    try {
+      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+      final bool canAuthenticate =
+          canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+
+      if (!canAuthenticate) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Perangkat ini tidak mendukung login biometrik (sidik jari/wajah).')),
+          );
+        }
+        return;
+      }
+
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Gunakan sidik jari atau PIN perangkat untuk masuk',
+        
+      );
+
+      if (didAuthenticate && context.mounted) {
+        final prefs = await SharedPreferences.getInstance();
+        final lastUserId = prefs.getString('userId');
+
+        final usersList = await appDb.select(appDb.users).get();
+        User? authenticatedUser;
+
+        if (lastUserId != null) {
+          authenticatedUser =
+              usersList.where((u) => u.id == lastUserId).firstOrNull;
+        }
+
+        // Fallback to default admin if no previous user
+        if (authenticatedUser == null) {
+          authenticatedUser = usersList
+              .where(
+                  (u) => u.roleId == 'role-admin' || u.roleId == 'role-owner')
+              .firstOrNull;
+        }
+
+        if (authenticatedUser != null) {
+          String mappedRole = 'Kasir';
+          if (authenticatedUser.roleId == 'role-admin' ||
+              authenticatedUser.roleId == 'role-owner') {
+            mappedRole = 'Admin';
+          }
+
+          await prefs.setBool('isLoggedIn', true);
+          await prefs.setString('userRole', mappedRole);
+          await prefs.setString('userName', authenticatedUser!.name);
+          await prefs.setString('userId', authenticatedUser!.id);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text('Selamat datang kembali, ${authenticatedUser!.name}!')),
+          );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+                builder: (context) => MainLayout(
+                    userRole: mappedRole,
+                    userName: authenticatedUser!.name,
+                    userId: authenticatedUser!.id)),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Gagal menemukan data pengguna terakhir. Silakan login manual.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error otentikasi: $e')),
         );
       }
     }
@@ -323,11 +408,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       iconSize: 40,
                       color: Colors.blue,
                       icon: const Icon(Icons.fingerprint),
-                      onPressed: _showPinLoginDialog,
+                      onPressed: _authenticateWithBiometrics,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Login With PIN',
+                  const Text('Login With TouchId',
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 ],

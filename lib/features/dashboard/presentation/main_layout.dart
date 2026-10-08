@@ -231,7 +231,7 @@ class _MainLayoutState extends State<MainLayout> {
                       title: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                       onTap: () async {
                         final prefs = await SharedPreferences.getInstance();
-                        await prefs.clear();
+                        await prefs.setBool('isLoggedIn', false);
                         if (context.mounted) {
                           Navigator.of(context).pushReplacement(
                             MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -332,7 +332,7 @@ class _MainLayoutState extends State<MainLayout> {
                                     tooltip: 'Logout',
                                     onPressed: () async {
                                       final prefs = await SharedPreferences.getInstance();
-                                      await prefs.clear();
+                                      await prefs.setBool('isLoggedIn', false);
                                       if (context.mounted) {
                                         Navigator.of(context).pushReplacement(
                                           MaterialPageRoute(builder: (context) => const LoginScreen()),
