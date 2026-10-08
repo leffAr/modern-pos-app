@@ -183,14 +183,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (context.mounted) _showPinLoginDialog();
     }
   }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error otentikasi: $e')),
-        );
-      }
-    }
-  }
+
 
   void _showPinLoginDialog() {
     final pinController = TextEditingController();

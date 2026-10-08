@@ -45,7 +45,7 @@ class _POSScreenState extends State<POSScreen> {
   }
 
   double _taxPercentage = 0.0;
-  String? _qrisBase64;
+  String? widget.qrisBase64;
   double get _tax => (_subtotal - _discountAmount) * (_taxPercentage / 100);
   double get _grandTotal => (_subtotal - _discountAmount) + _tax;
 
@@ -82,7 +82,7 @@ class _POSScreenState extends State<POSScreen> {
       if (biz != null && mounted) {
         setState(() {
           _taxPercentage = biz.taxPercentage;
-          _qrisBase64 = biz.qrisBase64;
+          widget.qrisBase64 = biz.qrisBase64;
         });
       }
     });
@@ -851,6 +851,7 @@ Simpan pesan ini sebagai struk digital Anda.''';
           total: _grandTotal,
           enableTableNumber: business.enableTableNumber,
           hasCustomer: _selectedCustomer != null,
+          qrisBase64: widget.qrisBase64,
           customerPoints: _selectedCustomer?.point ?? 0,
           onComplete: (paid, change, method, tableNum, dueDate, usePoints) =>
               _completeTransaction(
@@ -2086,6 +2087,7 @@ class _CheckoutDialog extends StatefulWidget {
   final double total;
   final bool enableTableNumber;
   final bool hasCustomer;
+  final String? qrisBase64;
   final double customerPoints;
   final Function(double paid, double change, String method, String? tableNum,
       DateTime? dueDate, bool usePoints) onComplete;
@@ -2094,6 +2096,7 @@ class _CheckoutDialog extends StatefulWidget {
       {required this.total,
       required this.enableTableNumber,
       required this.hasCustomer,
+      this.qrisBase64,
       required this.customerPoints,
       required this.onComplete});
 
@@ -2285,7 +2288,7 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
               decoration: BoxDecoration(
                   color: Colors.purple.shade50,
                   borderRadius: BorderRadius.circular(8)),
-              child: (_qrisBase64 != null && _qrisBase64!.isNotEmpty)
+              child: (widget.qrisBase64 != null && widget.qrisBase64!.isNotEmpty)
                   ? Column(
                       children: [
                         const Text("Silakan Scan QRIS ini untuk membayar:",
@@ -2294,7 +2297,7 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
                                 color: Colors.purple)),
                         const SizedBox(height: 12),
                         Image.memory(
-                          base64Decode(_qrisBase64!),
+                          base64Decode(widget.qrisBase64!),
                           width: 250,
                           height: 250,
                           fit: BoxFit.contain,
