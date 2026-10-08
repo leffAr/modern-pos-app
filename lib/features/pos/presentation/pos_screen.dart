@@ -45,7 +45,7 @@ class _POSScreenState extends State<POSScreen> {
   }
 
   double _taxPercentage = 0.0;
-  String? widget.qrisBase64;
+  String? _qrisBase64;
   double get _tax => (_subtotal - _discountAmount) * (_taxPercentage / 100);
   double get _grandTotal => (_subtotal - _discountAmount) + _tax;
 
@@ -82,7 +82,7 @@ class _POSScreenState extends State<POSScreen> {
       if (biz != null && mounted) {
         setState(() {
           _taxPercentage = biz.taxPercentage;
-          widget.qrisBase64 = biz.qrisBase64;
+          _qrisBase64 = biz.qrisBase64;
         });
       }
     });
@@ -851,7 +851,7 @@ Simpan pesan ini sebagai struk digital Anda.''';
           total: _grandTotal,
           enableTableNumber: business.enableTableNumber,
           hasCustomer: _selectedCustomer != null,
-          qrisBase64: widget.qrisBase64,
+          qrisBase64: _qrisBase64,
           customerPoints: _selectedCustomer?.point ?? 0,
           onComplete: (paid, change, method, tableNum, dueDate, usePoints) =>
               _completeTransaction(
