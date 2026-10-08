@@ -91,6 +91,24 @@ class _UsersScreenState extends State<UsersScreen> {
                         labelText: 'PIN Angka (Untuk Login Cepat)',
                         hintText: 'Contoh: 1234'),
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Izinkan Akses Biometrik (Sidik Jari/Wajah)',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ),
+                      Switch(
+                        value: isBiometricAllowed,
+                        onChanged: (val) {
+                          setStateSB(() => isBiometricAllowed = val);
+                        },
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
