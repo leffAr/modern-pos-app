@@ -78,14 +78,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (context.mounted) {
       if (authenticatedUser != null) {
-        if (!authenticatedUser.allowBiometric) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'Akses biometrik ditolak untuk ${authenticatedUser!.name}. Silakan aktifkan di menu Kelola User.')),
-          );
-          return;
-        }
         String mappedRole = 'Kasir';
         if (authenticatedUser.roleId == 'role-admin' ||
             authenticatedUser.roleId == 'role-owner') {
@@ -122,51 +114,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _authenticateWithBiometrics() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastUserId = prefs.getString('userId');
+    final usersList = await appDb.select(appDb.users).get();
+    User? authenticatedUser;
+
+    if (lastUserId != null) {
+      authenticatedUser = usersList.where((u) => u.id == lastUserId).firstOrNull;
+    }
+
+    if (authenticatedUser == null) {
+      authenticatedUser = usersList.where((u) => u.roleId == 'role-admin' || u.roleId == 'role-owner').firstOrNull;
+    }
+
+    // Jika biometrik ditolak dari Kelola User, langsung minta PIN!
+    if (authenticatedUser != null && !authenticatedUser.allowBiometric) {
+      if (context.mounted) _showPinLoginDialog();
+      return;
+    }
+
     final LocalAuthentication auth = LocalAuthentication();
     try {
       final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
-      final bool canAuthenticate =
-          canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+      final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
 
       if (!canAuthenticate) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text(
-                    'Perangkat ini tidak mendukung login biometrik (sidik jari/wajah).')),
-          );
-        }
+        if (context.mounted) _showPinLoginDialog();
         return;
       }
 
       final bool didAuthenticate = await auth.authenticate(
-        localizedReason: 'Gunakan sidik jari atau PIN perangkat untuk masuk',
+        localizedReason: 'Gunakan sidik jari untuk masuk',
       );
 
       if (didAuthenticate && context.mounted) {
-        final prefs = await SharedPreferences.getInstance();
-        final lastUserId = prefs.getString('userId');
-
-        final usersList = await appDb.select(appDb.users).get();
-        User? authenticatedUser;
-
-        if (lastUserId != null) {
-          authenticatedUser =
-              usersList.where((u) => u.id == lastUserId).firstOrNull;
-        }
-
-        // Fallback to default admin if no previous user
-        if (authenticatedUser == null) {
-          authenticatedUser = usersList
-              .where(
-                  (u) => u.roleId == 'role-admin' || u.roleId == 'role-owner')
-              .firstOrNull;
-        }
-
         if (authenticatedUser != null) {
           String mappedRole = 'Kasir';
-          if (authenticatedUser.roleId == 'role-admin' ||
-              authenticatedUser.roleId == 'role-owner') {
+          if (authenticatedUser.roleId == 'role-admin' || authenticatedUser.roleId == 'role-owner') {
             mappedRole = 'Admin';
           }
 
@@ -176,9 +160,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           await prefs.setString('userId', authenticatedUser!.id);
 
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'Selamat datang kembali, ${authenticatedUser!.name}!')),
+            SnackBar(content: Text('Selamat datang kembali, ${authenticatedUser!.name}!')),
           );
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -189,12 +171,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text(
-                    'Gagal menemukan data pengguna terakhir. Silakan login manual.')),
+            const SnackBar(content: Text('Gagal menemukan data pengguna terakhir. Silakan login manual.')),
           );
         }
+      } else {
+        // Gagal 3x atau batal, langsung ke PIN!
+        if (context.mounted) _showPinLoginDialog();
       }
+    } catch (e) {
+      // Gagal sistem (misal API diblokir / too many attempts), ke PIN!
+      if (context.mounted) _showPinLoginDialog();
+    }
+  }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
