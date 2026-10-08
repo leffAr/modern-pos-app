@@ -2285,16 +2285,32 @@ class _CheckoutDialogState extends State<_CheckoutDialog> {
               decoration: BoxDecoration(
                   color: Colors.purple.shade50,
                   borderRadius: BorderRadius.circular(8)),
-              child: const Row(
-                children: [
-                  Icon(Icons.qr_code_2, size: 40, color: Colors.purple),
-                  SizedBox(width: 16),
-                  Expanded(
-                      child: Text(
-                          "Pembayaran via QRIS. Pelanggan memindai kode QR toko.",
-                          style: TextStyle(color: Colors.purple))),
-                ],
-              ),
+              child: (_qrisBase64 != null && _qrisBase64!.isNotEmpty)
+                  ? Column(
+                      children: [
+                        const Text("Silakan Scan QRIS ini untuk membayar:",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.purple)),
+                        const SizedBox(height: 12),
+                        Image.memory(
+                          base64Decode(_qrisBase64!),
+                          width: 250,
+                          height: 250,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
+                    )
+                  : const Row(
+                      children: [
+                        Icon(Icons.qr_code_2, size: 40, color: Colors.purple),
+                        SizedBox(width: 16),
+                        Expanded(
+                            child: Text(
+                                "Pembayaran via QRIS. (Admin belum mengunggah gambar QRIS di Pengaturan Toko)",
+                                style: TextStyle(color: Colors.purple))),
+                      ],
+                    ),
             ),
           ] else ...[
             // KASBON
