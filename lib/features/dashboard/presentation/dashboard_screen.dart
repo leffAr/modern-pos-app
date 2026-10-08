@@ -751,35 +751,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final crossAxisCount = isMobile ? 2 : (isTablet ? 4 : 4);
     final formatter = NumberFormat('#,###', 'id_ID');
 
-    return GridView.count(
-      crossAxisCount: crossAxisCount,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: isMobile ? 1.3 : 1.8,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        _SummaryCard(
-            title: 'Pendapatan',
-            value: 'Rp ${formatter.format(revenue.toInt())}',
-            icon: Icons.attach_money,
-            color: Colors.green),
-        _SummaryCard(
-            title: 'Piutang (Kasbon)',
-            value: 'Rp ${formatter.format(piutang.toInt())}',
-            icon: Icons.money_off,
-            color: Colors.orange),
-        _SummaryCard(
-            title: 'Pengeluaran',
-            value: 'Rp ${formatter.format(expense.toInt())}',
-            icon: Icons.trending_down,
-            color: Colors.red),
-        _SummaryCard(
-            title: 'Laba Bersih',
-            value: 'Rp ${formatter.format(netProfit.toInt())}',
-            icon: Icons.savings,
-            color: Colors.blue),
-      ],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: GridView.count(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: isMobile ? 1.3 : 2.5,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _SummaryCard(
+                title: 'Pendapatan',
+                value: 'Rp ${formatter.format(revenue.toInt())}',
+                icon: Icons.attach_money,
+                color: Colors.green),
+            _SummaryCard(
+                title: 'Piutang (Kasbon)',
+                value: 'Rp ${formatter.format(piutang.toInt())}',
+                icon: Icons.money_off,
+                color: Colors.orange),
+            _SummaryCard(
+                title: 'Pengeluaran',
+                value: 'Rp ${formatter.format(expense.toInt())}',
+                icon: Icons.trending_down,
+                color: Colors.red),
+            _SummaryCard(
+                title: 'Laba Bersih',
+                value: 'Rp ${formatter.format(netProfit.toInt())}',
+                icon: Icons.savings,
+                color: Colors.blue),
+          ],
+        ),
+      ),
     );
   }
 
