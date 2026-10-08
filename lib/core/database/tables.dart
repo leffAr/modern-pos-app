@@ -46,6 +46,7 @@ class Users extends Table {
   TextColumn get phone => text().nullable()();
   TextColumn get password => text().nullable()(); // Password biasa (teks)
   TextColumn get pin => text().nullable()(); // hashed PIN for quick login
+  BoolColumn get allowBiometric => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

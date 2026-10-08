@@ -16,7 +16,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration {
@@ -82,6 +82,9 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 14) {
            await m.addColumn(transactions, transactions.discountNotes);
+        }
+        if (from < 15) {
+          await m.addColumn(users, users.allowBiometric);
         }
       },
     );

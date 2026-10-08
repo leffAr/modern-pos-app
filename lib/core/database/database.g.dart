@@ -1017,9 +1017,19 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   late final GeneratedColumn<String> pin = GeneratedColumn<String>(
       'pin', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _allowBiometricMeta =
+      const VerificationMeta('allowBiometric');
+  @override
+  late final GeneratedColumn<bool> allowBiometric = GeneratedColumn<bool>(
+      'allow_biometric', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("allow_biometric" IN (0, 1))'),
+      defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, branchId, roleId, name, email, phone, password, pin];
+      [id, branchId, roleId, name, email, phone, password, pin, allowBiometric];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1065,6 +1075,12 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       context.handle(
           _pinMeta, pin.isAcceptableOrUnknown(data['pin']!, _pinMeta));
     }
+    if (data.containsKey('allow_biometric')) {
+      context.handle(
+          _allowBiometricMeta,
+          allowBiometric.isAcceptableOrUnknown(
+              data['allow_biometric']!, _allowBiometricMeta));
+    }
     return context;
   }
 
@@ -1090,6 +1106,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
           .read(DriftSqlType.string, data['${effectivePrefix}password']),
       pin: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}pin']),
+      allowBiometric: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}allow_biometric'])!,
     );
   }
 
@@ -1108,6 +1126,7 @@ class User extends DataClass implements Insertable<User> {
   final String? phone;
   final String? password;
   final String? pin;
+  final bool allowBiometric;
   const User(
       {required this.id,
       this.branchId,
@@ -1116,7 +1135,8 @@ class User extends DataClass implements Insertable<User> {
       this.email,
       this.phone,
       this.password,
-      this.pin});
+      this.pin,
+      required this.allowBiometric});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1140,6 +1160,7 @@ class User extends DataClass implements Insertable<User> {
     if (!nullToAbsent || pin != null) {
       map['pin'] = Variable<String>(pin);
     }
+    map['allow_biometric'] = Variable<bool>(allowBiometric);
     return map;
   }
 
@@ -1160,6 +1181,7 @@ class User extends DataClass implements Insertable<User> {
           ? const Value.absent()
           : Value(password),
       pin: pin == null && nullToAbsent ? const Value.absent() : Value(pin),
+      allowBiometric: Value(allowBiometric),
     );
   }
 
@@ -1175,6 +1197,7 @@ class User extends DataClass implements Insertable<User> {
       phone: serializer.fromJson<String?>(json['phone']),
       password: serializer.fromJson<String?>(json['password']),
       pin: serializer.fromJson<String?>(json['pin']),
+      allowBiometric: serializer.fromJson<bool>(json['allowBiometric']),
     );
   }
   @override
@@ -1189,6 +1212,7 @@ class User extends DataClass implements Insertable<User> {
       'phone': serializer.toJson<String?>(phone),
       'password': serializer.toJson<String?>(password),
       'pin': serializer.toJson<String?>(pin),
+      'allowBiometric': serializer.toJson<bool>(allowBiometric),
     };
   }
 
@@ -1200,7 +1224,8 @@ class User extends DataClass implements Insertable<User> {
           Value<String?> email = const Value.absent(),
           Value<String?> phone = const Value.absent(),
           Value<String?> password = const Value.absent(),
-          Value<String?> pin = const Value.absent()}) =>
+          Value<String?> pin = const Value.absent(),
+          bool? allowBiometric}) =>
       User(
         id: id ?? this.id,
         branchId: branchId.present ? branchId.value : this.branchId,
@@ -1210,6 +1235,7 @@ class User extends DataClass implements Insertable<User> {
         phone: phone.present ? phone.value : this.phone,
         password: password.present ? password.value : this.password,
         pin: pin.present ? pin.value : this.pin,
+        allowBiometric: allowBiometric ?? this.allowBiometric,
       );
   User copyWithCompanion(UsersCompanion data) {
     return User(
@@ -1221,6 +1247,9 @@ class User extends DataClass implements Insertable<User> {
       phone: data.phone.present ? data.phone.value : this.phone,
       password: data.password.present ? data.password.value : this.password,
       pin: data.pin.present ? data.pin.value : this.pin,
+      allowBiometric: data.allowBiometric.present
+          ? data.allowBiometric.value
+          : this.allowBiometric,
     );
   }
 
@@ -1234,14 +1263,15 @@ class User extends DataClass implements Insertable<User> {
           ..write('email: $email, ')
           ..write('phone: $phone, ')
           ..write('password: $password, ')
-          ..write('pin: $pin')
+          ..write('pin: $pin, ')
+          ..write('allowBiometric: $allowBiometric')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, branchId, roleId, name, email, phone, password, pin);
+  int get hashCode => Object.hash(
+      id, branchId, roleId, name, email, phone, password, pin, allowBiometric);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1253,7 +1283,8 @@ class User extends DataClass implements Insertable<User> {
           other.email == this.email &&
           other.phone == this.phone &&
           other.password == this.password &&
-          other.pin == this.pin);
+          other.pin == this.pin &&
+          other.allowBiometric == this.allowBiometric);
 }
 
 class UsersCompanion extends UpdateCompanion<User> {
@@ -1265,6 +1296,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String?> phone;
   final Value<String?> password;
   final Value<String?> pin;
+  final Value<bool> allowBiometric;
   final Value<int> rowid;
   const UsersCompanion({
     this.id = const Value.absent(),
@@ -1275,6 +1307,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.phone = const Value.absent(),
     this.password = const Value.absent(),
     this.pin = const Value.absent(),
+    this.allowBiometric = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   UsersCompanion.insert({
@@ -1286,6 +1319,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.phone = const Value.absent(),
     this.password = const Value.absent(),
     this.pin = const Value.absent(),
+    this.allowBiometric = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         name = Value(name);
@@ -1298,6 +1332,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? phone,
     Expression<String>? password,
     Expression<String>? pin,
+    Expression<bool>? allowBiometric,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1309,6 +1344,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (phone != null) 'phone': phone,
       if (password != null) 'password': password,
       if (pin != null) 'pin': pin,
+      if (allowBiometric != null) 'allow_biometric': allowBiometric,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1322,6 +1358,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       Value<String?>? phone,
       Value<String?>? password,
       Value<String?>? pin,
+      Value<bool>? allowBiometric,
       Value<int>? rowid}) {
     return UsersCompanion(
       id: id ?? this.id,
@@ -1332,6 +1369,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       phone: phone ?? this.phone,
       password: password ?? this.password,
       pin: pin ?? this.pin,
+      allowBiometric: allowBiometric ?? this.allowBiometric,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1363,6 +1401,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (pin.present) {
       map['pin'] = Variable<String>(pin.value);
     }
+    if (allowBiometric.present) {
+      map['allow_biometric'] = Variable<bool>(allowBiometric.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1380,6 +1421,7 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('phone: $phone, ')
           ..write('password: $password, ')
           ..write('pin: $pin, ')
+          ..write('allowBiometric: $allowBiometric, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10596,6 +10638,7 @@ typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
   Value<String?> phone,
   Value<String?> password,
   Value<String?> pin,
+  Value<bool> allowBiometric,
   Value<int> rowid,
 });
 typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
@@ -10607,6 +10650,7 @@ typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
   Value<String?> phone,
   Value<String?> password,
   Value<String?> pin,
+  Value<bool> allowBiometric,
   Value<int> rowid,
 });
 
@@ -10722,6 +10766,10 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<String> get pin => $composableBuilder(
       column: $table.pin, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get allowBiometric => $composableBuilder(
+      column: $table.allowBiometric,
+      builder: (column) => ColumnFilters(column));
 
   $$BranchesTableFilterComposer get branchId {
     final $$BranchesTableFilterComposer composer = $composerBuilder(
@@ -10875,6 +10923,10 @@ class $$UsersTableOrderingComposer
   ColumnOrderings<String> get pin => $composableBuilder(
       column: $table.pin, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get allowBiometric => $composableBuilder(
+      column: $table.allowBiometric,
+      builder: (column) => ColumnOrderings(column));
+
   $$BranchesTableOrderingComposer get branchId {
     final $$BranchesTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -10942,6 +10994,9 @@ class $$UsersTableAnnotationComposer
 
   GeneratedColumn<String> get pin =>
       $composableBuilder(column: $table.pin, builder: (column) => column);
+
+  GeneratedColumn<bool> get allowBiometric => $composableBuilder(
+      column: $table.allowBiometric, builder: (column) => column);
 
   $$BranchesTableAnnotationComposer get branchId {
     final $$BranchesTableAnnotationComposer composer = $composerBuilder(
@@ -11105,6 +11160,7 @@ class $$UsersTableTableManager extends RootTableManager<
             Value<String?> phone = const Value.absent(),
             Value<String?> password = const Value.absent(),
             Value<String?> pin = const Value.absent(),
+            Value<bool> allowBiometric = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               UsersCompanion(
@@ -11116,6 +11172,7 @@ class $$UsersTableTableManager extends RootTableManager<
             phone: phone,
             password: password,
             pin: pin,
+            allowBiometric: allowBiometric,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -11127,6 +11184,7 @@ class $$UsersTableTableManager extends RootTableManager<
             Value<String?> phone = const Value.absent(),
             Value<String?> password = const Value.absent(),
             Value<String?> pin = const Value.absent(),
+            Value<bool> allowBiometric = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               UsersCompanion.insert(
@@ -11138,6 +11196,7 @@ class $$UsersTableTableManager extends RootTableManager<
             phone: phone,
             password: password,
             pin: pin,
+            allowBiometric: allowBiometric,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

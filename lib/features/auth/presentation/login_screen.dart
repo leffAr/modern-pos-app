@@ -78,6 +78,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (context.mounted) {
       if (authenticatedUser != null) {
+        if (!authenticatedUser.allowBiometric) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Akses biometrik ditolak untuk ${authenticatedUser!.name}. Silakan aktifkan di menu Kelola User.')),
+          );
+          return;
+        }
         String mappedRole = 'Kasir';
         if (authenticatedUser.roleId == 'role-admin' ||
             authenticatedUser.roleId == 'role-owner') {
@@ -133,7 +141,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       final bool didAuthenticate = await auth.authenticate(
         localizedReason: 'Gunakan sidik jari atau PIN perangkat untuk masuk',
-        
       );
 
       if (didAuthenticate && context.mounted) {
@@ -170,8 +177,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content:
-                    Text('Selamat datang kembali, ${authenticatedUser!.name}!')),
+                content: Text(
+                    'Selamat datang kembali, ${authenticatedUser!.name}!')),
           );
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
