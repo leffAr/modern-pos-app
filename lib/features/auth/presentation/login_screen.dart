@@ -499,7 +499,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   size: 250, color: Colors.blue.shade700),
                               const SizedBox(height: 24),
                               Text(
-                                'Manage Your Store\nEfficiently & Easily',
+                                'Modern POS',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 28,
